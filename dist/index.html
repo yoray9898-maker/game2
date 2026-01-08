@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>元素戰爭：核彈末日</title>
+    <title>元素戰爭：核彈末日 (完美修復版)</title>
     <style>
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
         body { display: flex; flex-direction: column; align-items: center; background-color: #2c3e50; color: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; margin: 0; padding-top: 15px; overflow: hidden; touch-action: none; }
@@ -13,12 +13,11 @@
         #game-container { position: relative; width: 612px; height: 412px; }
         canvas { background-color: #ecf0f1; border: 6px solid #34495e; border-radius: 4px; display: block; }
         
-        /* 難度選單介面還原 */
+        /* 難度選單 */
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; border-radius: 4px; }
-        .diff-btn { width: 300px; padding: 18px; margin: 10px; border: none; border-radius: 15px; color: white; cursor: pointer; text-align: center; transition: transform 0.1s, brightness 0.2s; }
-        .diff-btn:hover { brightness: 1.1; transform: scale(1.02); }
+        .diff-btn { width: 300px; padding: 18px; margin: 10px; border: none; border-radius: 15px; color: white; cursor: pointer; text-align: center; transition: transform 0.1s; }
         .diff-btn .title { font-size: 1.4em; font-weight: bold; display: block; margin-bottom: 4px; letter-spacing: 2px; }
-        .diff-btn .desc { font-size: 0.8em; opacity: 0.85; display: block; font-weight: lighter; }
+        .diff-btn .desc { font-size: 0.8em; opacity: 0.85; display: block; }
         
         .controls { margin-top: 15px; display: flex; justify-content: space-between; width: 610px; background: #34495e; padding: 10px; border-radius: 4px; gap: 6px; }
         .shop-btn { flex: 1; padding: 10px 2px; cursor: pointer; border: 2px solid transparent; border-radius: 4px; color: white; font-weight: bold; font-size: 0.8em; text-align: center; transition: 0.2s; position: relative; }
@@ -38,7 +37,7 @@
 
     <div id="game-container">
         <div id="start-screen" class="overlay">
-            <h2 style="color:#f1c40f; margin-bottom: 25px; font-size: 1.8em; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">元素戰爭：核彈末日</h2>
+            <h2 style="color:#f1c40f; margin-bottom: 25px; font-size: 1.8em;">元素戰爭：核彈末日</h2>
             <button class="diff-btn" style="background:#27ae60;" onclick="startGame(1.25)">
                 <span class="title">簡單模式</span>
                 <span class="desc">金錢 1.0x / 血量 1.25x</span>
@@ -49,7 +48,7 @@
             </button>
             <button class="diff-btn" style="background:#c0392b;" onclick="startGame(1.40)">
                 <span class="title">困難模式</span>
-                <span class="desc">金錢 1.4x / 血量 1.40x / ★BOSS狂暴</span>
+                <span class="desc">金錢 1.4x / 血量 1.40x</span>
             </button>
         </div>
         <canvas id="gameCanvas" width="600" height="400"></canvas>
@@ -137,8 +136,9 @@
             }
 
             if(selectedTower && selectedTower.range > 0) drawRange(selectedTower.x+20, selectedTower.y+20, selectedTower.range);
-            else if(currentType && isPointerDown && mouseHoverPos.x !== -1 && towerProps[currentType][0] > 0) {
-                drawRange(mouseHoverPos.x*40+20, mouseHoverPos.y*40+20, towerProps[currentType][0]);
+            else if(currentType && isPointerDown && mouseHoverPos.x !== -1) {
+                let r = towerProps[currentType][0];
+                if(r > 0) drawRange(mouseHoverPos.x*40+20, mouseHoverPos.y*40+20, r);
             }
 
             fieldTraps.forEach(ft => {
@@ -209,17 +209,7 @@
 
             damageTexts = damageTexts.filter(t => { t.y -= 1; t.life--; ctx.save(); ctx.globalAlpha = t.life/40; ctx.fillStyle=t.color; ctx.font=`bold ${t.size}px Arial`; ctx.textAlign="center"; ctx.fillText(t.text, t.x, t.y); ctx.restore(); return t.life > 0; });
             soldiers = soldiers.filter(s => { s.hp -= 0.1; ctx.fillStyle = "#bdc3c7"; ctx.fillRect(s.x, s.y, 16, 16); return s.hp > 0; });
-            
-            enemies = enemies.filter(e => { 
-                e.update(); e.draw(); 
-                if(e.hp <= 0) { 
-                    money += 15; 
-                    if(e.isBoss && Math.random() < 0.5) { nukeCount++; addDmgText(e.x+20, e.y-20, "獲得核彈!", "#f1c40f", 20); }
-                    updateUI(); 
-                } 
-                return e.hp > 0; 
-            });
-
+            enemies = enemies.filter(e => { e.update(); e.draw(); if(e.hp <= 0) { money += 15; if(e.isBoss && Math.random() < 0.5) { nukeCount++; addDmgText(e.x+20, e.y-20, "獲得核彈!", "#f1c40f", 20); } updateUI(); } return e.hp > 0; });
             if(health <= 0) { alert("遊戲結束！"); location.reload(); }
             requestAnimationFrame(gameLoop);
         }
@@ -256,7 +246,7 @@
                 }); 
                 updateUI(); 
                 addDmgText(300, 200, "核彈發射!!!", "#e74c3c", 40);
-            } else if (nukeCount <= 0) { alert("沒有核彈存量！(需擊敗BOSS機率獲得)"); }
+            } else if (nukeCount <= 0) { alert("沒有核彈存量！"); }
             else { alert("金錢不足 $500！"); }
         }
 
