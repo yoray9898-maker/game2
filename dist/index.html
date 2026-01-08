@@ -2,28 +2,35 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>元素戰爭：核彈末日 - 砲火重修版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>元素戰爭：操作流暢優化版</title>
     <style>
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
-        body { display: flex; flex-direction: column; align-items: center; background-color: #2c3e50; color: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; margin: 0; padding-top: 15px; overflow: hidden; }
-        .ui-panel { display: flex; justify-content: space-between; background: #34495e; padding: 15px 25px; width: 610px; border-radius: 4px; margin-bottom: 15px; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
-        .stat-box { text-align: center; flex: 1; }
-        .label { font-size: 0.85em; color: #bdc3c7; display: block; margin-bottom: 5px; }
-        .stat { font-size: 1.2em; font-weight: bold; color: #f1c40f; }
-        #game-container { position: relative; width: 612px; height: 412px; }
-        canvas { background-color: #ecf0f1; border: 6px solid #34495e; border-radius: 4px; display: block; }
+        body { display: flex; flex-direction: column; align-items: center; background-color: #2c3e50; color: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; margin: 0; padding-top: 10px; overflow: hidden; touch-action: none; }
         
-        /* 難度選擇介面還原 */
+        /* 介面容器 */
+        .ui-panel { display: flex; justify-content: space-between; background: #34495e; padding: 10px 15px; width: 100%; max-width: 610px; border-radius: 4px; margin-bottom: 10px; box-shadow: 0 4px 0 rgba(0,0,0,0.2); font-size: 0.9em; }
+        .stat-box { text-align: center; flex: 1; }
+        .label { font-size: 0.8em; color: #bdc3c7; display: block; margin-bottom: 3px; }
+        .stat { font-size: 1.1em; font-weight: bold; color: #f1c40f; }
+        
+        #game-container { position: relative; width: 600px; height: 400px; max-width: 100vw; }
+        canvas { background-color: #ecf0f1; border: 4px solid #34495e; border-radius: 4px; display: block; cursor: crosshair; width: 100%; height: 100%; object-fit: contain; }
+        
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.98); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; border-radius: 4px; }
-        .diff-btn { width: 380px; padding: 15px; margin: 10px; border: none; border-radius: 12px; color: white; cursor: pointer; transition: 0.2s; text-align: left; padding-left: 30px; }
-        .diff-btn:hover { transform: scale(1.02); filter: brightness(1.1); }
-        .diff-btn .title { font-size: 1.4em; font-weight: bold; display: block; }
-        .diff-btn .desc { font-size: 0.9em; opacity: 0.9; margin-top: 4px; display: block; }
+        .diff-btn { width: 80%; max-width: 380px; padding: 12px; margin: 8px; border: none; border-radius: 12px; color: white; cursor: pointer; transition: 0.2s; text-align: left; padding-left: 20px; }
+        .diff-btn:active { transform: scale(0.98); }
+        .diff-btn .title { font-size: 1.2em; font-weight: bold; display: block; }
+        .diff-btn .desc { font-size: 0.8em; opacity: 0.9; margin-top: 4px; display: block; }
 
-        .controls { margin-top: 15px; display: flex; justify-content: space-between; width: 610px; background: #34495e; padding: 10px; border-radius: 4px; gap: 6px; }
-        .shop-btn { flex: 1; padding: 10px 2px; cursor: pointer; border: 2px solid transparent; border-radius: 4px; color: white; font-weight: bold; font-size: 0.8em; text-align: center; transition: 0.2s; position: relative; }
-        .shop-btn.selected { border: 2px solid #f1c40f; transform: translateY(-8px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        #upgradeMenu { background: #8e44ad; padding: 10px 20px; border-radius: 30px; display: none; gap: 15px; align-items: center; border: 2px solid #f1c40f; margin-top: 15px; width: 610px; justify-content: center; }
+        /* 商店按鈕區域 */
+        .controls { margin-top: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; width: 100%; max-width: 610px; background: #34495e; padding: 8px; border-radius: 4px; gap: 4px; transition: opacity 0.2s; }
+        .shop-btn { flex: 1 1 30%; padding: 12px 2px; cursor: pointer; border: 2px solid transparent; border-radius: 4px; color: white; font-weight: bold; font-size: 0.85em; text-align: center; transition: 0.1s; position: relative; min-width: 80px; }
+        .shop-btn.selected { border: 2px solid #f1c40f; transform: translateY(-5px); background-color: #445566 !important; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        
+        /* 升級選單 */
+        #upgradeMenu { background: #8e44ad; padding: 15px; border-radius: 10px; display: none; gap: 10px; align-items: center; border: 2px solid #f1c40f; margin-top: 10px; width: 100%; max-width: 610px; justify-content: center; flex-wrap: wrap; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        
         .hidden { display: none !important; }
     </style>
 </head>
@@ -31,35 +38,35 @@
 
     <div class="ui-panel">
         <div class="stat-box"><span class="label">金錢</span><span id="money" class="stat">200</span></div>
-        <div class="stat-box"><span class="label">生命值</span><span id="health" class="stat">20</span></div>
+        <div class="stat-box"><span class="label">生命</span><span id="health" class="stat">20</span></div>
         <div class="stat-box"><span class="label">波次</span><span id="waveDisplay" class="stat">1</span></div>
-        <div class="stat-box"><span class="label">核彈數量</span><span id="nukeDisplay" class="stat">0</span></div>
+        <div class="stat-box"><span class="label">核彈</span><span id="nukeDisplay" class="stat">0</span></div>
     </div>
 
     <div id="game-container">
         <div id="start-screen" class="overlay">
             <h2 style="color:#f1c40f; margin-bottom: 20px; letter-spacing: 2px;">請選擇遊戲難度</h2>
             <button class="diff-btn" style="background:#27ae60;" onclick="startGame(1.25, 1.0)">
-                <span class="title">簡單模式 (Easy)</span>
-                <span class="desc">金錢獲取率: 100% / 敵人血量增加率: 125%</span>
+                <span class="title">簡單 (Easy)</span>
+                <span class="desc">金錢 100% / 血量 125%</span>
             </button>
             <button class="diff-btn" style="background:#2980b9;" onclick="startGame(1.30, 1.2)">
-                <span class="title">普通模式 (Normal)</span>
-                <span class="desc">金錢獲取率: 120% / 敵人血量增加率: 130%</span>
+                <span class="title">普通 (Normal)</span>
+                <span class="desc">金錢 120% / 血量 130%</span>
             </button>
             <button class="diff-btn" style="background:#c0392b;" onclick="startGame(1.40, 1.4)">
-                <span class="title">困難模式 (Hard)</span>
-                <span class="desc">金錢獲取率: 140% / 敵人血量增加率: 140%</span>
+                <span class="title">困難 (Hard)</span>
+                <span class="desc">金錢 140% / 血量 140%</span>
             </button>
         </div>
         <canvas id="gameCanvas" width="600" height="400"></canvas>
     </div>
 
     <div id="upgradeMenu">
-        <span id="towerInfo" style="font-weight:bold; color:white;"></span>
-        <button style="background:#f1c40f; border:none; padding:8px 20px; border-radius:5px; cursor:pointer;" onclick="upgradeSelectedTower()">升級 $<span id="upgradeCost"></span></button>
-        <button style="background:#EA0000; color:white; border:none; padding:8px 20px; border-radius:5px; cursor:pointer;" onclick="sellSelectedTower()">賣出</button>
-        <button style="background:#bdc3c7; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;" onclick="deselectTower()">X</button>
+        <span id="towerInfo" style="font-weight:bold; color:white; width: 100%; text-align: center; font-size: 1.1em; margin-bottom: 5px;"></span>
+        <button style="background:#f1c40f; border:none; padding:12px 24px; border-radius:5px; font-weight:bold; font-size:1em;" onclick="upgradeSelectedTower()">升級 $<span id="upgradeCost"></span></button>
+        <button style="background:#EA0000; color:white; border:none; padding:12px 24px; border-radius:5px; font-size:1em;" onclick="sellSelectedTower()">賣出</button>
+        <button style="background:#bdc3c7; border:none; padding:12px 24px; border-radius:5px; font-size:1em;" onclick="deselectTower()">X</button>
     </div>
 
     <div class="controls" id="shopControls">
@@ -76,7 +83,8 @@
         const ctx = canvas.getContext('2d');
         let money = 200, health = 20, currentWave = 1, gameRunning = false;
         let towers = [], enemies = [], bullets = [], soldiers = [], fieldTraps = [], damageTexts = [];
-        let currentType = null, selectedTower = null, hpGrowth = 1.3, moneyMult = 1.0;
+        let currentType = null, selectedTower = null, mousePos = {x:-1, y:-1}, isOverCanvas = false;
+        let hpGrowth = 1.3, moneyMult = 1.0;
         let nukeCount = 0, enemiesToSpawn = 0, spawnTimer = 0, waveInProgress = false;
 
         const pathPoints = [{x:0,y:1},{x:4,y:1},{x:4,y:4},{x:2,y:4},{x:2,y:6},{x:7,y:6},{x:7,y:2},{x:13,y:2},{x:13,y:5},{x:10,y:5},{x:10,y:7},{x:14,y:7}];
@@ -96,6 +104,54 @@
             selectType('gun'); requestAnimationFrame(gameLoop); 
         }
 
+        // --- 事件監聽 ---
+        function updateMousePos(e) {
+            e.preventDefault(); 
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.clientX, clientY = e.clientY;
+            if(e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; } 
+            else if (e.changedTouches && e.changedTouches.length > 0) { clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY; }
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            mousePos.x = Math.floor(((clientX - rect.left) * scaleX) / 40);
+            mousePos.y = Math.floor(((clientY - rect.top) * scaleY) / 40);
+            isOverCanvas = true;
+        }
+
+        canvas.addEventListener('pointerdown', (e) => updateMousePos(e), { passive: false });
+        canvas.addEventListener('pointermove', (e) => { if(isOverCanvas) updateMousePos(e); }, { passive: false });
+        canvas.addEventListener('pointerleave', () => isOverCanvas = false);
+
+        canvas.addEventListener('pointerup', (e) => {
+            updateMousePos(e);
+            const px = mousePos.x, py = mousePos.y;
+            if (px < 0 || px >= 15 || py < 0 || py >= 10) return;
+
+            const existing = towers.find(t => Math.floor(t.x/40) === px && Math.floor(t.y/40) === py);
+
+            if(existing) {
+                // 選取場上的塔 -> 開啟升級介面，隱藏商店
+                selectedTower = existing; 
+                currentType = null; 
+                document.querySelectorAll('.shop-btn').forEach(b => b.classList.remove('selected')); 
+                toggleMode('upgrade'); // 切換至升級模式
+                updateUpgradeUI();
+            } 
+            else if (currentType && mapLayout[py][px] === 0) {
+                // 建造新塔 -> 不會取消 currentType (連續建造)
+                const cost = towerProps[currentType][4];
+                if (money >= cost) { 
+                    towers.push({ x: px*40, y: py*40, type: currentType, level: 1, range: towerProps[currentType][0], dmg: towerProps[currentType][1], cd: 0, cdMax: towerProps[currentType][2], color: towerProps[currentType][3], freezeTimer: 0 }); 
+                    money -= cost; 
+                    updateUI(); 
+                    // 這裡故意不呼叫 deselectTower() 以保持連續建造
+                }
+            } else {
+                deselectTower();
+            }
+        });
+
+        // --- Game Logic ---
         class Enemy {
             constructor(wave) { 
                 this.x = pathPoints[0].x*40; this.y = pathPoints[0].y*40; this.tIdx = 1; 
@@ -120,10 +176,7 @@
 
                 let totalSlow = 0;
                 let sortedSlows = Array.from(this.slows.values()).sort((a,b) => b-a);
-                if(sortedSlows.length > 0) {
-                    totalSlow = sortedSlows[0];
-                    for(let i=1; i<sortedSlows.length; i++) totalSlow += sortedSlows[i] * 0.02;
-                }
+                if(sortedSlows.length > 0) { totalSlow = sortedSlows[0]; for(let i=1; i<sortedSlows.length; i++) totalSlow += sortedSlows[i] * 0.02; }
                 let slowCap = this.isBoss ? 0.5 : 0.75;
                 totalSlow = Math.min(totalSlow, slowCap);
                 let speed = (this.baseSpeed * (1 - totalSlow)) * (this.berserk ? 2 : 1);
@@ -137,13 +190,33 @@
             draw() {
                 ctx.fillStyle = this.stun > 0 ? "#74b9ff" : (this.flash > 0 ? "white" : (this.isBoss ? (this.berserk?"#ff0000":"#8e44ad") : "#c0392b"));
                 ctx.beginPath(); ctx.arc(this.x+20, this.y+20, this.isBoss?18:12, 0, Math.PI*2); ctx.fill();
-                if(this.isBoss) { ctx.fillStyle="white"; ctx.fillRect(this.x, this.y-10, 40, 5); ctx.fillStyle="red"; ctx.fillRect(this.x, this.y-10, (this.hp/this.maxHp)*40, 5); }
+                let hpPct = Math.max(0, this.hp / this.maxHp);
+                let barW = this.isBoss ? 40 : 24;
+                ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(this.x + (this.isBoss?0:8), this.y - 10, barW, 5);
+                ctx.fillStyle = hpPct > 0.5 ? "#2ecc71" : "#e74c3c"; ctx.fillRect(this.x + (this.isBoss?0:8), this.y - 10, barW * hpPct, 5);
             }
         }
 
         function gameLoop() {
             if(!gameRunning) return; ctx.clearRect(0,0,600,400);
             for(let y=0;y<10;y++) for(let x=0;x<15;x++) { ctx.fillStyle = mapLayout[y][x]===1 ? '#d35400' : '#27ae60'; ctx.fillRect(x*40, y*40, 40, 40); }
+
+            // --- 顯示 ---
+            if (isOverCanvas && currentType && !selectedTower) {
+                if(mousePos.y >= 0 && mousePos.y < 10 && mousePos.x >= 0 && mousePos.x < 15 && mapLayout[mousePos.y][mousePos.x] === 0) {
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.3)"; ctx.fillRect(mousePos.x*40, mousePos.y*40, 40, 40);
+                }
+                const range = towerProps[currentType][0];
+                if (range > 0) {
+                    const canPlace = (mousePos.y >= 0 && mousePos.y < 10 && mousePos.x >= 0 && mousePos.x < 15 && mapLayout[mousePos.y][mousePos.x] === 0);
+                    ctx.beginPath(); ctx.arc(mousePos.x*40+20, mousePos.y*40+20, range, 0, Math.PI*2);
+                    ctx.fillStyle = canPlace ? "rgba(255, 255, 255, 0.2)" : "rgba(231, 76, 60, 0.3)";
+                    ctx.fill(); ctx.strokeStyle = canPlace ? "rgba(255, 255, 255, 0.5)" : "#e74c3c"; ctx.stroke();
+                }
+            } else if(selectedTower && selectedTower.range > 0) {
+                ctx.beginPath(); ctx.arc(selectedTower.x+20, selectedTower.y+20, selectedTower.range, 0, Math.PI*2);
+                ctx.fillStyle = "rgba(255, 255, 255, 0.2)"; ctx.fill(); ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"; ctx.lineWidth = 2; ctx.stroke();
+            }
 
             towers.forEach(t => {
                 if(t.freezeTimer > 0) { t.freezeTimer--; ctx.fillStyle = "rgba(0, 191, 255, 0.5)"; ctx.fillRect(t.x, t.y, 40, 40); }
@@ -161,111 +234,65 @@
                 let dx = b.target.x+20-b.x, dy = b.target.y+20-b.y, d = Math.sqrt(dx*dx+dy*dy);
                 if(d < 15) {
                     let finalDmg = b.dmg, isCrit = false;
-                    // 機槍爆擊
-                    if(b.tower.type === 'gun' && b.tower.level >= 3) {
-                        let prob = Math.min(0.6, 0.2+(b.tower.level-3)*0.04);
-                        if(Math.random()<prob) { finalDmg *= (1.5+(b.tower.level-3)*0.1); isCrit = true; }
-                    }
-                    // 砲擊擴散 (Lv3+)
-                    if(b.tower.type === 'bomb' && b.tower.level >= 3) {
-                        enemies.forEach(e => {
-                            if(e !== b.target && Math.hypot(e.x-b.target.x, e.y-b.target.y) < 60) {
-                                e.hp -= b.dmg * 0.5; e.flash = 2;
-                            }
-                        });
-                        ctx.strokeStyle = "orange"; ctx.beginPath(); ctx.arc(b.target.x+20, b.target.y+20, 60, 0, Math.PI*2); ctx.stroke();
-                    }
+                    if(b.tower.type === 'gun' && b.tower.level >= 3) { let prob = Math.min(0.6, 0.2+(b.tower.level-3)*0.04); if(Math.random()<prob) { finalDmg *= (1.5+(b.tower.level-3)*0.1); isCrit = true; } }
+                    if(b.tower.type === 'bomb' && b.tower.level >= 3) { enemies.forEach(e => { if(e !== b.target && Math.hypot(e.x-b.target.x, e.y-b.target.y) < 60) { e.hp -= b.dmg * 0.5; e.flash = 2; } }); ctx.strokeStyle = "orange"; ctx.beginPath(); ctx.arc(b.target.x+20, b.target.y+20, 60, 0, Math.PI*2); ctx.stroke(); }
                     if(b.tower.type === 'ice') { let sv=0.5+(b.tower.level-1)*0.02; if(b.target.isBoss) sv*=0.5; b.target.slows.set(b.tower, sv); }
                     b.target.hp -= finalDmg; b.target.flash=3;
-                    damageTexts.push({x:b.x, y:b.y, txt:Math.floor(finalDmg), life:30, color:isCrit?"#ff0000":"white"});
-                    return false;
+                    damageTexts.push({x:b.x, y:b.y, txt:Math.floor(finalDmg), life:30, color:isCrit?"#ff0000":"white"}); return false;
                 }
-                b.x += (dx/d)*10; b.y += (dy/d)*10; ctx.fillStyle=b.tower.type==='ice'?"#74b9ff":"yellow"; ctx.beginPath(); ctx.arc(b.x,b.y,b.tower.type==='bomb'?6:4,0,Math.PI*2); ctx.fill();
-                return b.target.hp > 0;
+                b.x += (dx/d)*10; b.y += (dy/d)*10; ctx.fillStyle=b.tower.type==='ice'?"#74b9ff":"yellow"; ctx.beginPath(); ctx.arc(b.x,b.y,b.tower.type==='bomb'?6:4,0,Math.PI*2); ctx.fill(); return b.target.hp > 0;
             });
 
-            fieldTraps = fieldTraps.filter(ft => {
-                let hit = enemies.find(e => Math.hypot(e.x+20-(ft.x*40+20), e.y+20-(ft.y*40+20)) < 20);
-                if(hit) { hit.stun = hit.isBoss ? ft.stunTime*0.5 : ft.stunTime; return false; }
-                return true;
-            });
-
-            soldiers = soldiers.filter(s => {
-                let hit = enemies.find(e => Math.hypot(e.x+20-(s.x+8), e.y+20-(s.y+8)) < 25);
-                if(hit) { hit.hp -= s.dmg; hit.flash = 5; return false; }
-                ctx.fillStyle = "#bdc3c7"; ctx.fillRect(s.x, s.y, 16, 16); return true;
-            });
-
+            fieldTraps = fieldTraps.filter(ft => { let hit = enemies.find(e => Math.hypot(e.x+20-(ft.x*40+20), e.y+20-(ft.y*40+20)) < 20); if(hit) { hit.stun = hit.isBoss ? ft.stunTime*0.5 : ft.stunTime; return false; } return true; });
+            soldiers = soldiers.filter(s => { let hit = enemies.find(e => Math.hypot(e.x+20-(s.x+8), e.y+20-(s.y+8)) < 25); if(hit) { hit.hp -= s.dmg; hit.flash = 5; damageTexts.push({x:s.x, y:s.y, txt:Math.floor(s.dmg), life:30, color:"#f1c40f"}); return false; } ctx.fillStyle = "#bdc3c7"; ctx.fillRect(s.x, s.y, 16, 16); return true; });
             damageTexts.forEach(dt => { dt.y -= 0.5; dt.life--; ctx.fillStyle=dt.color; ctx.font="bold 12px Arial"; ctx.fillText(dt.txt, dt.x, dt.y); });
             damageTexts = damageTexts.filter(dt => dt.life > 0);
 
-            if(waveInProgress) {
-                if(enemiesToSpawn > 0) { if(++spawnTimer > 60) { enemies.push(new Enemy(currentWave)); enemiesToSpawn--; spawnTimer=0; updateUI(); } }
-                else if(enemies.length === 0) { waveInProgress = false; setTimeout(() => { currentWave++; enemiesToSpawn = 5+currentWave; waveInProgress=true; updateUI(); }, 2000); }
-            }
+            if(waveInProgress) { if(enemiesToSpawn > 0) { if(++spawnTimer > 60) { enemies.push(new Enemy(currentWave)); enemiesToSpawn--; spawnTimer=0; updateUI(); } } else if(enemies.length === 0) { waveInProgress = false; setTimeout(() => { currentWave++; enemiesToSpawn = 5+currentWave; waveInProgress=true; updateUI(); }, 2000); } }
 
             enemies.forEach(e => { e.update(); e.draw(); });
-            enemies = enemies.filter(e => {
-                if(e.hp <= 0) {
-                    money += Math.floor(15 * moneyMult);
-                    if(e.isBoss && Math.random() < 0.5) { nukeCount++; damageTexts.push({x:e.x, y:e.y-20, txt:"Nuclear Drop!", life:60, color:"#ff3300"}); }
-                    updateUI();
-                }
-                return e.hp > 0;
+            enemies = enemies.filter(e => { 
+                if(e.hp <= 0) { money += Math.floor(15 * moneyMult); if(e.isBoss && Math.random() < 0.5) { nukeCount++; damageTexts.push({x:e.x, y:e.y-20, txt:"Nuclear Drop!", life:60, color:"#ff3300"}); } updateUI(); }
+                return e.hp > 0; 
             });
 
             if(health <= 0) { alert("Game Over!"); location.reload(); }
             requestAnimationFrame(gameLoop);
         }
 
-        // --- Controls ---
+        // --- UI Control Logic ---
+        
         function selectType(type) { 
-            selectedTower = null; currentType = type; 
+            // 如果點擊的是當前已選的 -> 取消選取 (Toggle)
+            if (currentType === type) {
+                deselectTower();
+            } else {
+                selectedTower = null; 
+                currentType = type; 
+                // 更新視覺效果
+                document.querySelectorAll('.shop-btn').forEach(b => b.classList.remove('selected')); 
+                const activeBtn = document.getElementById('btn-' + type);
+                if(activeBtn) activeBtn.classList.add('selected'); 
+                
+                toggleMode('shop'); // 確保商店可見
+            }
+        }
+
+        function deselectTower() { 
+            selectedTower = null; 
+            currentType = null; 
             document.querySelectorAll('.shop-btn').forEach(b => b.classList.remove('selected')); 
-            const activeBtn = document.getElementById('btn-' + type);
-            if(activeBtn) activeBtn.classList.add('selected'); toggleControls(true); 
-        }
-        function deselectTower() { selectedTower = null; toggleControls(true); if(!currentType) document.querySelectorAll('.shop-btn').forEach(b => b.classList.remove('selected')); }
-        function toggleControls(showShop) { document.getElementById('shopControls').classList.toggle('hidden', !showShop); document.getElementById('upgradeMenu').style.display = showShop ? 'none' : 'flex'; }
-        
-        canvas.addEventListener('pointerup', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const px = Math.floor((e.clientX - rect.left) / (rect.width/15)), py = Math.floor((e.clientY - rect.top) / (rect.height/10));
-            const existing = towers.find(t => Math.floor(t.x/40) === px && Math.floor(t.y/40) === py);
-            if(existing) { selectedTower = existing; currentType = null; document.querySelectorAll('.shop-btn').forEach(b => b.classList.remove('selected')); toggleControls(false); updateUpgradeUI(); }
-            else if (currentType && mapLayout[py][px] === 0) {
-                const cost = towerProps[currentType][4];
-                if (money >= cost) { towers.push({ x: px*40, y: py*40, type: currentType, level: 1, range: towerProps[currentType][0], dmg: towerProps[currentType][1], cd: 0, cdMax: towerProps[currentType][2], color: towerProps[currentType][3], freezeTimer: 0 }); money -= cost; updateUI(); }
-            } else deselectTower();
-        });
-
-        function updateUpgradeUI() { let cost = Math.floor(towerProps[selectedTower.type][4] * Math.pow(1.6, selectedTower.level)); document.getElementById('upgradeCost').innerText = cost; document.getElementById('towerInfo').innerText = towerProps[selectedTower.type][5] + " LV." + selectedTower.level; }
-        function upgradeSelectedTower() { 
-            let cost = Math.floor(towerProps[selectedTower.type][4] * Math.pow(1.6, selectedTower.level)); 
-            if(money >= cost) { 
-                money -= cost; selectedTower.level++; 
-                if(selectedTower.type === 'summon') selectedTower.dmg *= 1.75; 
-                else { selectedTower.dmg *= 1.7; if(selectedTower.range > 0) selectedTower.range += 10; }
-                updateUI(); updateUpgradeUI(); 
-            } 
-        }
-        function sellSelectedTower() { towers = towers.filter(t => t !== selectedTower); money += Math.floor(towerProps[selectedTower.type][4] * 0.6); updateUI(); deselectTower(); }
-        
-        function updateUI() { 
-            document.getElementById('money').innerText = Math.floor(money); 
-            document.getElementById('health').innerText = health; 
-            document.getElementById('waveDisplay').innerText = currentWave; 
-            document.getElementById('nukeDisplay').innerText = nukeCount;
-            document.getElementById('btn-nuke').innerText = `核彈 (${nukeCount}) $500`;
+            toggleMode('shop'); // 取消升級或建造時，回到商店模式
         }
 
-        function useNuke() { 
-            if(nukeCount > 0 && money >= 500) { 
-                nukeCount--; money -= 500; 
-                enemies.forEach(e => { let r = e.isBoss ? 0.5 : 0.75; e.hp -= e.hp * r; });
-                ctx.fillStyle = "white"; ctx.fillRect(0, 0, 600, 400); updateUI(); 
-            } 
-        }
-    </script>
-</body>
-</html>
+        // mode: 'shop' or 'upgrade'
+        function toggleMode(mode) {
+            const shop = document.getElementById('shopControls');
+            const upgrade = document.getElementById('upgradeMenu');
+            
+            if (mode === 'shop') {
+                shop.classList.remove('hidden');
+                shop.style.display = 'flex';
+                upgrade.style.display = 'none';
+            } else if (mode === 'upgrade') {
+                shop.classList.add(
