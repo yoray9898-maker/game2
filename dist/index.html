@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>元素戰爭：核彈末日 (預覽與範圍完全修復版)</title>
+    <title>元素戰爭：核彈末日 (範圍邏輯最終版)</title>
     <style>
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
         body { display: flex; flex-direction: column; align-items: center; background-color: #2c3e50; color: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; margin: 0; padding-top: 15px; overflow: hidden; touch-action: none; }
@@ -14,7 +14,6 @@
         canvas { background-color: #ecf0f1; border: 6px solid #34495e; border-radius: 4px; display: block; cursor: crosshair; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; border-radius: 4px; }
         .diff-btn { width: 300px; padding: 18px; margin: 10px; border: none; border-radius: 15px; color: white; cursor: pointer; text-align: center; transition: transform 0.1s; }
-        .diff-btn:active { transform: scale(0.95); }
         .diff-btn .title { font-size: 1.4em; font-weight: bold; display: block; margin-bottom: 4px; letter-spacing: 2px; }
         .diff-btn .desc { font-size: 0.8em; opacity: 0.85; display: block; }
         .controls { margin-top: 15px; display: flex; justify-content: space-between; width: 610px; background: #34495e; padding: 10px; border-radius: 4px; gap: 6px; }
@@ -65,10 +64,7 @@
         <button class="shop-btn" id="btn-bomb" style="background:#d35400" onclick="selectType('bomb')">砲擊 $120</button>
         <button class="shop-btn" id="btn-summon" style="background:#f1c40f; color:#2c3e50;" onclick="selectType('summon')">召喚 $150</button>
         <button class="shop-btn" id="btn-trap" style="background:#7f8c8d" onclick="selectType('trap')">陷阱 $150</button>
-        <button class="shop-btn" id="btn-nuke" style="background:#c0392b;" onclick="useNuke()">
-            核彈 $500 <br>
-            <span id="nukeQty" style="font-size: 0.85em; opacity: 0.9;">(擁有: 0)</span>
-        </button>
+        <button class="shop-btn" id="btn-nuke" style="background:#c0392b;" onclick="useNuke()">核彈 $500 <br><span id="nukeQty">(擁有: 0)</span></button>
     </div>
 
     <script>
@@ -98,7 +94,6 @@
             selectType('gun'); requestAnimationFrame(gameLoop);
         }
 
-        // 追蹤滑鼠位置進行預覽
         canvas.addEventListener('pointermove', (e) => {
             const rect = canvas.getBoundingClientRect();
             mousePos.x = Math.floor((e.clientX - rect.left) / (rect.width/15));
@@ -140,9 +135,9 @@
                 ctx.fillStyle = mapLayout[y][x]===1 ? '#d35400' : '#27ae60'; ctx.fillRect(x*40, y*40, 40, 40);
             }
 
-            // --- 繪製範圍 (預覽或選取) ---
-            if (currentType && !selectedTower && mousePos.x >= 0) {
-                // 放置前預覽
+            // --- 核心範圍顯示邏輯 ---
+            if (currentType && !selectedTower && mousePos.x >= 0 && mousePos.y >= 0 && mousePos.y < 10) {
+                // 預覽圓圈 (商店購買中)
                 const canPlace = mapLayout[mousePos.y][mousePos.x] === 0;
                 ctx.beginPath();
                 ctx.arc(mousePos.x*40+20, mousePos.y*40+20, towerProps[currentType][0], 0, Math.PI*2);
@@ -151,7 +146,7 @@
                 ctx.strokeStyle = canPlace ? "rgba(255, 255, 255, 0.5)" : "#e74c3c";
                 ctx.stroke();
             } else if(selectedTower) {
-                // 已放置選取預覽
+                // 固定圓圈 (點擊已放置的塔)
                 ctx.beginPath();
                 ctx.arc(selectedTower.x+20, selectedTower.y+20, selectedTower.range, 0, Math.PI*2);
                 ctx.fillStyle = "rgba(255, 255, 255, 0.2)"; ctx.fill();
@@ -221,15 +216,22 @@
         }
 
         function selectType(type) { 
-            selectedTower = null; // 切換購買時取消選中
+            selectedTower = null; 
             currentType = type; 
             document.querySelectorAll('.shop-btn').forEach(b => b.classList.remove('selected')); 
             document.getElementById('btn-' + type).classList.add('selected'); 
             toggleControls(true);
         }
 
-        function deselectTower() { selectedTower = null; toggleControls(true); }
-        function toggleControls(showShop) { document.getElementById('shopControls').classList.toggle('hidden', !showShop); document.getElementById('upgradeMenu').style.display = showShop ? 'none' : 'flex'; }
+        function deselectTower() { 
+            selectedTower = null; 
+            toggleControls(true); 
+        }
+
+        function toggleControls(showShop) { 
+            document.getElementById('shopControls').classList.toggle('hidden', !showShop); 
+            document.getElementById('upgradeMenu').style.display = showShop ? 'none' : 'flex'; 
+        }
         
         canvas.addEventListener('pointerup', (e) => {
             const rect = canvas.getBoundingClientRect();
@@ -237,20 +239,30 @@
             const py = Math.floor((e.clientY - rect.top) / (rect.height/10));
             
             const existingTower = towers.find(t => Math.floor(t.x/40) === px && Math.floor(t.y/40) === py);
+            
             if(existingTower) {
-                selectedTower = existingTower; currentType = null;
+                // 點擊現有的塔
+                selectedTower = existingTower; 
+                currentType = null; // 點擊塔時，取消商店購買狀態
                 document.querySelectorAll('.shop-btn').forEach(b => b.classList.remove('selected'));
-                toggleControls(false); updateUpgradeUI();
-                return;
-            }
-
-            if (currentType && mapLayout[py] && mapLayout[py][px] === 0) {
+                toggleControls(false); 
+                updateUpgradeUI();
+            } else if (currentType && mapLayout[py] && mapLayout[py][px] === 0) {
+                // 放置新塔
                 const cost = towerProps[currentType][4];
                 if (money >= cost) {
                     towers.push({ x: px*40, y: py*40, type: currentType, level: 1, range: towerProps[currentType][0], dmg: towerProps[currentType][1], cd: 0, cdMax: towerProps[currentType][2], color: towerProps[currentType][3] });
-                    money -= cost; updateUI();
-                } else { addDmgText(e.clientX - rect.left, e.clientY - rect.top, "金錢不足!", "#e74c3c", 20); }
-            } else { deselectTower(); }
+                    money -= cost; 
+                    // 重要：塔放下後，將購買狀態取消，預覽圓圈即消失
+                    currentType = null; 
+                    document.querySelectorAll('.shop-btn').forEach(b => b.classList.remove('selected'));
+                    updateUI();
+                } else { 
+                    addDmgText(e.clientX - rect.left, e.clientY - rect.top, "金錢不足!", "#e74c3c", 20); 
+                }
+            } else { 
+                deselectTower(); 
+            }
         });
 
         function updateUpgradeUI() { let cost = Math.floor(towerProps[selectedTower.type][4] * Math.pow(1.6, selectedTower.level)); document.getElementById('upgradeCost').innerText = cost; document.getElementById('towerInfo').innerText = towerProps[selectedTower.type][5] + " LV." + selectedTower.level; }
