@@ -2,148 +2,90 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>元素戰爭：核彈末日</title>
+    <title>元素戰爭：Boss 掉落版</title>
     <style>
-        * { box-sizing: border-box; touch-action: none; }
-        body { margin: 0; background-color: #1a1a2e; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
-        
-        /* 頂部 UI */
-        .top-bar {
-            width: 100%; max-width: 600px; background: #16213e; 
-            display: flex; justify-content: space-around; padding: 12px;
-            border-bottom: 2px solid #0f3460;
-        }
-        .stat-box div { color: #95a5a6; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-box span { color: #f1c40f; font-weight: bold; font-size: 18px; }
-
-        /* 遊戲區域 */
-        #game-container { position: relative; width: 600px; height: 400px; background: #000; overflow: hidden; }
-        canvas { display: block; width: 100%; height: 100%; }
-
-        /* 難度選擇介面 */
-        .overlay {
-            position: absolute; width: 100%; height: 100%; background: #1a1a2e;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
-        }
-        .game-title { color: #f1c40f; font-size: 32px; font-weight: bold; margin-bottom: 30px; text-shadow: 0 0 15px rgba(241, 196, 15, 0.4); }
-        .difficulty-btn {
-            width: 80%; max-width: 350px; padding: 15px; border: none; border-radius: 12px;
-            color: white; font-weight: bold; margin-bottom: 12px; cursor: pointer; transition: 0.2s;
-        }
-        .difficulty-btn:hover { transform: scale(1.02); filter: brightness(1.2); }
-        .sub-text { font-size: 10px; font-weight: normal; display: block; margin-top: 4px; opacity: 0.8; }
-
-        /* 商店控制項 */
-        .shop-row {
-            display: flex; gap: 6px; margin-top: 15px; width: 600px; max-width: 95vw;
-        }
-        .shop-btn {
-            flex: 1; padding: 12px 5px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); 
-            color: white; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s;
-        }
-        .shop-btn.selected { border: 2px solid #f1c40f; box-shadow: 0 0 10px #f1c40f; }
-
-        #tower-info {
-            position: absolute; top: 10px; left: 10px; background: rgba(22, 33, 62, 0.9);
-            padding: 10px; border-radius: 8px; border: 1px solid #e94560; display: none; font-size: 12px; pointer-events: none;
-        }
+        body { margin: 0; background: #2c3e50; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .top-bar { width: 600px; background: #34495e; display: flex; justify-content: space-around; padding: 10px; border-bottom: 3px solid #2c3e50; }
+        .stat span { color: #f1c40f; font-weight: bold; font-size: 18px; }
+        #game-container { position: relative; width: 600px; height: 400px; border: 4px solid #34495e; overflow: hidden; }
+        canvas { background: #567d46; display: block; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44,62,80,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
+        .btn { padding: 15px 30px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin: 10px; width: 220px; }
+        .shop { display: flex; gap: 5px; width: 600px; margin-top: 10px; }
+        .shop-btn { flex: 1; padding: 12px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .shop-btn.selected { outline: 3px solid #f1c40f; }
+        #toast { position: absolute; top: 50px; width: 100%; text-align: center; color: #f1c40f; font-weight: bold; display: none; text-shadow: 0 0 10px black; }
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <div class="stat-box"><div>Money</div><span id="money">300</span></div>
-        <div class="stat-box"><div>Health</div><span id="health">20</span></div>
-        <div class="stat-box"><div>Wave</div><span id="wave">1</span></div>
-        <div class="stat-box"><div>Mode</div><span id="diff-label">--</span></div>
+<div class="top-bar">
+    <div class="stat">💰: <span id="money">300</span></div>
+    <div class="stat">❤️: <span id="health">20</span></div>
+    <div class="stat">🌊: <span id="wave">1</span></div>
+    <div class="stat">☢️: <span id="nuke-count">0</span></div>
+</div>
+
+<div id="game-container">
+    <div id="toast">☢️ 獲得核彈！</div>
+    <div id="menu" class="overlay">
+        <h1 style="color:#f1c40f">元素戰爭</h1>
+        <button class="btn" style="background:#27ae60" onclick="init(1.0, 1.15, 1.0)">簡單模式</button>
+        <button class="btn" style="background:#2980b9" onclick="init(1.2, 1.40, 1.2)">普通模式</button>
+        <button class="btn" style="background:#c0392b" onclick="init(1.5, 1.65, 1.4)">困難模式</button>
     </div>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+</div>
 
-    <div id="game-container">
-        <div id="tower-info"></div>
-
-        <div id="menu" class="overlay">
-            <div class="game-title">元素戰爭：核彈末日</div>
-            <button class="difficulty-btn" style="background:#27ae60;" onclick="initGame(1.0, 1.15, 1.0, 'EASY')">簡單模式 <span class="sub-text">HP x1.0 / Money 1.0x</span></button>
-            <button class="difficulty-btn" style="background:#2980b9;" onclick="initGame(1.2, 1.40, 1.2, 'NORMAL')">普通模式 <span class="sub-text">HP x1.2 / Money 1.2x</span></button>
-            <button class="difficulty-btn" style="background:#c0392b;" onclick="initGame(1.5, 1.65, 1.4, 'HARD')">困難模式 <span class="sub-text">HP x1.5 / Money 1.4x</span></button>
-        </div>
-
-        <div id="game-over" class="overlay" style="display:none; background:rgba(0,0,0,0.85)">
-            <h1 style="color:#ff4d4d; font-size:40px">任務失敗</h1>
-            <p>最終波次: <span id="final-wave" style="color:#f1c40f">0</span></p>
-            <button class="difficulty-btn" style="background:#e94560" onclick="location.reload()">重新啟動系統</button>
-        </div>
-
-        <canvas id="gameCanvas" width="600" height="400"></canvas>
-    </div>
-
-    <div class="shop-row">
-        <button class="shop-btn" id="btn-gun" style="background:#2980b9" onclick="setSelect('gun')">機槍 $50</button>
-        <button class="shop-btn" id="btn-ice" style="background:#3498db" onclick="setSelect('ice')">寒冰 $80</button>
-        <button class="shop-btn" id="btn-bomb" style="background:#d35400" onclick="setSelect('bomb')">砲擊 $120</button>
-        <button class="shop-btn" style="background:#27ae60" onclick="upgradeTower()">升級塔</button>
-        <button class="shop-btn" style="background:#8e44ad" onclick="nuke()">核彈 $500</button>
-    </div>
+<div class="shop">
+    <button class="shop-btn" id="btn-gun" style="background:#2980b9" onclick="sel('gun')">機槍 $50</button>
+    <button class="shop-btn" id="btn-ice" style="background:#3498db" onclick="sel('ice')">寒冰 $80</button>
+    <button class="shop-btn" id="btn-bomb" style="background:#d35400" onclick="sel('bomb')">砲擊 $120</button>
+    <button class="shop-btn" style="background:#27ae60" onclick="upg()">升級塔</button>
+    <button class="shop-btn" style="background:#8e44ad" onclick="useNuke()">發射核彈 (需☢️x1+$500)</button>
+</div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    let money=300, health=20, wave=1, towers=[], enemies=[], bullets=[], selected=null, buildType=null;
-    let gameActive=false, mouse={x:0,y:0,down:false}, dBase=1, dGrowth=1.4, mMult=1;
+    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+    let money=300, health=20, wave=1, towers=[], enemies=[], bullets=[], selected=null, type=null;
+    let active=false, mouse={x:0,y:0,down:false}, dBase=1, dGrowth=1.4, mMult=1, nukeStock=0;
 
     const path = [{x:0,y:40},{x:160,y:40},{x:160,y:160},{x:80,y:160},{x:80,y:240},{x:280,y:240},{x:280,y:80},{x:520,y:80},{x:520,y:200},{x:400,y:200},{x:400,y:280},{x:600,y:280}];
 
-    function initGame(b, g, m, l) {
-        dBase=b; dGrowth=g; mMult=m; 
-        document.getElementById('menu').style.display='none';
-        document.getElementById('diff-label').innerText=l;
-        gameActive=true; spawn(); loop();
-    }
-
-    function setSelect(t) { buildType=t; selected=null; document.querySelectorAll('.shop-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('btn-'+t)?.classList.add('selected'); }
-
-    function isPath(x, y) {
+    function init(b,g,m){ dBase=b; dGrowth=g; mMult=m; document.getElementById('menu').style.display='none'; active=true; spawn(); loop(); }
+    function sel(t){ type=t; selected=null; document.querySelectorAll('.shop-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('btn-'+t).classList.add('selected'); }
+    function onPath(x, y) {
         for(let i=0; i<path.length-1; i++){
-            let p1=path[i], p2=path[i+1], b=30;
-            if(x >= Math.min(p1.x, p2.x)-10 && x <= Math.max(p1.x, p2.x)+50 && y >= Math.min(p1.y, p2.y)-10 && y <= Math.max(p1.y, p2.y)+50) return true;
-        }
-        return false;
+            let p1=path[i], p2=path[i+1], xMin=Math.min(p1.x,p2.x), xMax=Math.max(p1.x,p2.x), yMin=Math.min(p1.y,p2.y), yMax=Math.max(p1.y,p2.y);
+            if(x>=xMin && x<=xMax+40 && y>=yMin && y<=yMax+40) return true;
+        } return false;
     }
 
-    canvas.onmousedown=(e)=>{ mouse.down=true; updateM(e); let gx=Math.floor(mouse.x/40)*40, gy=Math.floor(mouse.y/40)*40; let t=towers.find(t=>t.x===gx && t.y===gy); if(t){selected=t; buildType=null; info();} };
+    canvas.onmousedown=(e)=>{ mouse.down=true; updateM(e); let gx=Math.floor(mouse.x/40)*40, gy=Math.floor(mouse.y/40)*40, t=towers.find(t=>t.x===gx&&t.y===gy); if(t){selected=t;type=null;}};
     canvas.onmousemove=(e)=>updateM(e);
     canvas.onmouseup=()=>{
-        if(buildType){
-            let gx=Math.floor(mouse.x/40)*40, gy=Math.floor(mouse.y/40)*40, cost=buildType==='gun'?50:buildType==='ice'?80:120;
-            if(!isPath(gx,gy) && money>=cost && !towers.find(t=>t.x===gx&&t.y===gy)){
-                money-=cost; towers.push({x:gx,y:gy,type:buildType,lv:1,cd:0,range:buildType==='bomb'?170:150});
-            }
+        if(type){
+            let gx=Math.floor(mouse.x/40)*40, gy=Math.floor(mouse.y/40)*40, cost=type==='gun'?50:type==='ice'?80:120;
+            if(!onPath(gx,gy) && money>=cost && !towers.find(t=>t.x===gx&&t.y===gy)){ money-=cost; towers.push({x:gx,y:gy,type:type,lv:1,cd:0,range:type==='bomb'?170:150}); }
         }
         mouse.down=false; ui();
     };
-
     function updateM(e){ let r=canvas.getBoundingClientRect(); mouse.x=(e.clientX-r.left)*(canvas.width/r.width); mouse.y=(e.clientY-r.top)*(canvas.height/r.height); }
 
     function loop(){
-        if(!gameActive) return;
-        ctx.clearRect(0,0,600,400);
-        // 路徑
-        ctx.strokeStyle="#2c3e50"; ctx.lineWidth=40; ctx.lineJoin="round"; ctx.beginPath(); ctx.moveTo(path[0].x+20,path[0].y+20); path.forEach(p=>ctx.lineTo(p.x+20,p.y+20)); ctx.stroke();
-        
-        // 預覽/範圍
-        if(mouse.down && buildType){
+        if(!active) return;
+        ctx.fillStyle="#567d46"; ctx.fillRect(0,0,600,400); 
+        ctx.strokeStyle="#d2b48c"; ctx.lineWidth=40; ctx.lineJoin="round"; ctx.beginPath(); ctx.moveTo(path[0].x+20,path[0].y+20); path.forEach(p=>ctx.lineTo(p.x+20,p.y+20)); ctx.stroke();
+
+        if(mouse.down && type){
             let gx=Math.floor(mouse.x/40)*40, gy=Math.floor(mouse.y/40)*40;
-            ctx.beginPath(); ctx.arc(gx+20,gy+20,buildType==='bomb'?170:150,0,Math.PI*2);
-            ctx.strokeStyle=isPath(gx,gy)?"#ff4d4d":"white"; ctx.stroke();
-            ctx.fillStyle=isPath(gx,gy)?"rgba(255,0,0,0.1)":"rgba(255,255,255,0.1)"; ctx.fill();
+            ctx.beginPath(); ctx.arc(gx+20,gy+20,type==='bomb'?170:150,0,Math.PI*2);
+            ctx.strokeStyle=onPath(gx,gy)?"red":"white"; ctx.stroke();
         }
-        if(selected){
-            ctx.beginPath(); ctx.arc(selected.x+20,selected.y+20,selected.range,0,Math.PI*2);
-            ctx.strokeStyle="white"; ctx.lineWidth=2; ctx.stroke();
-        }
+        if(selected){ ctx.beginPath(); ctx.arc(selected.x+20,selected.y+20,selected.range,0,Math.PI*2); ctx.strokeStyle="white"; ctx.stroke(); }
 
         towers.forEach(t=>{
-            ctx.fillStyle=t.type==='gun'?'#2980b9':t.type==='ice'?'#3498db':'#d35400'; ctx.fillRect(t.x+5,t.y+5,30,30);
+            ctx.fillStyle=t.type==='gun'?'#2980b9':t.type==='ice'?'#3498db':'#d35400'; ctx.fillRect(t.x+2,t.y+2,36,36);
             if(--t.cd<=0){
                 let e=enemies.find(e=>Math.hypot(e.x-t.x,e.y-t.y)<t.range);
                 if(e){ bullets.push({x:t.x+20,y:t.y+20,target:e,tower:t}); t.cd=20; }
@@ -153,40 +95,40 @@
         bullets=bullets.filter(b=>{
             let dx=b.target.x+20-b.x, dy=b.target.y+20-b.y, d=Math.sqrt(dx*dx+dy*dy);
             if(d<10){ b.target.hp-=(b.tower.type==='gun'?35:b.tower.type==='ice'?10:75)*Math.pow(1.65, b.tower.lv-1); return false; }
-            b.x+=(dx/d)*12; b.y+=(dy/d)*12; ctx.fillStyle="yellow"; ctx.fillRect(b.x,b.y,3,3); return b.target.hp>0;
+            b.x+=(dx/d)*12; b.y+=(dy/d)*12; ctx.fillStyle="yellow"; ctx.fillRect(b.x,b.y,4,4); return b.target.hp>0;
         });
 
         enemies.forEach(e=>{
             let t=path[e.ti], dx=t.x-e.x, dy=t.y-e.y, d=Math.sqrt(dx*dx+dy*dy);
             if(d<2){ e.ti++; if(e.ti>=path.length){ health--; e.hp=0; } }
             else{ e.x+=(dx/d)*1.2; e.y+=(dy/d)*1.2; }
-            ctx.fillStyle=e.boss?"#a29bfe":"#ff7675"; ctx.beginPath(); ctx.arc(e.x+20,e.y+20,e.boss?18:12,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle="#555"; ctx.fillRect(e.x,e.y-10,40,4); ctx.fillStyle="#55efc4"; ctx.fillRect(e.x,e.y-10,40*(e.hp/e.mhp),4);
+            ctx.fillStyle=e.boss?"#8e44ad":"#c0392b"; ctx.beginPath(); ctx.arc(e.x+20,e.y+20,e.boss?18:12,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle="#555"; ctx.fillRect(e.x,e.y-10,40,5); ctx.fillStyle="lime"; ctx.fillRect(e.x,e.y-10,40*(e.hp/e.mhp),5);
         });
 
         enemies=enemies.filter(e=>{
-            if(e.hp<=0 && e.ti<path.length){ money+=Math.floor((e.boss?400:25)*Math.pow(e.boss?1.15:1.12, wave-1)*mMult); return false; }
+            if(e.hp<=0 && e.ti<path.length){ 
+                money+=Math.floor((e.boss?400:25)*Math.pow(e.boss?1.15:1.12, wave-1)*mMult);
+                if(e.boss && Math.random() < 0.5) { nukeStock++; showToast(); }
+                return false; 
+            }
             return e.hp>0;
         });
 
-        if(health<=0){ gameActive=false; document.getElementById('game-over').style.display='flex'; document.getElementById('final-wave').innerText=wave; }
+        if(health<=0) location.reload();
         ui(); requestAnimationFrame(loop);
     }
 
     function spawn(){
         let c=5+wave, boss=(wave%5===0);
         if(boss) enemies.push({x:path[0].x,y:path[0].y,ti:1,boss:true,mhp:100*dBase*Math.pow(dGrowth,wave-1)*15,hp:100*dBase*Math.pow(dGrowth,wave-1)*15});
-        else { let i=setInterval(()=>{ if(!gameActive){clearInterval(i);return;} enemies.push({x:path[0].x,y:path[0].y,ti:1,boss:false,mhp:100*dBase*Math.pow(dGrowth,wave-1),hp:100*dBase*Math.pow(dGrowth,wave-1)}); if(--c<=0){clearInterval(i); check();} },800); }
+        else { let i=setInterval(()=>{ if(!active){clearInterval(i);return;} enemies.push({x:path[0].x,y:path[0].y,ti:1,boss:false,mhp:100*dBase*Math.pow(dGrowth,wave-1),hp:100*dBase*Math.pow(dGrowth,wave-1)}); if(--c<=0){clearInterval(i); check();} },800); }
     }
-    function check(){ let i=setInterval(()=>{ if(enemies.length===0 && gameActive){clearInterval(i); wave++; setTimeout(spawn,2000);} },1000); }
-    function ui(){ document.getElementById('money').innerText=Math.floor(money); document.getElementById('health').innerText=health; document.getElementById('wave').innerText=wave; }
-    function info(){
-        let i=document.getElementById('tower-info'); if(!selected){i.style.display='none';return;}
-        i.style.display='block'; let cost=Math.floor((selected.type==='gun'?50:selected.type==='ice'?80:120)*(selected.lv*1.5));
-        i.innerHTML=`Lv.${selected.lv} ${selected.type.toUpperCase()}<br>Next Upgrade: $${cost}`;
-    }
-    function upgradeTower(){ if(selected){ let cost=Math.floor((selected.type==='gun'?50:selected.type==='ice'?80:120)*(selected.lv*1.5)); if(money>=cost){money-=cost; selected.lv++; selected.range+=10; info(); ui();} } }
-    function nuke(){ if(money>=500){ money-=500; enemies.forEach(e=>e.hp*=0.5); ui(); } }
+    function check(){ let i=setInterval(()=>{ if(enemies.length===0 && active){clearInterval(i); wave++; setTimeout(spawn,2000);} },1000); }
+    function ui(){ document.getElementById('money').innerText=Math.floor(money); document.getElementById('health').innerText=health; document.getElementById('wave').innerText=wave; document.getElementById('nuke-count').innerText=nukeStock; }
+    function upg(){ if(selected){ let cost=Math.floor((selected.type==='gun'?50:80)*(selected.lv*1.5)); if(money>=cost){money-=cost; selected.lv++; selected.range+=10; ui();} } }
+    function useNuke(){ if(nukeStock > 0 && money >= 500){ money-=500; nukeStock--; enemies.forEach(e=>e.hp*=0.5); ui(); } else { alert("需要 1 枚核彈及 $500！"); } }
+    function showToast() { const t=document.getElementById('toast'); t.style.display='block'; setTimeout(()=>t.style.display='none', 2000); }
 </script>
 </body>
 </html>
