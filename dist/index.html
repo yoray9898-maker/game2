@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=640, user-scalable=no">
-    <title>元素戰爭：完整終極版</title>
+    <title>元素戰爭：完整修復版</title>
     <style>
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
         body { display: flex; flex-direction: column; align-items: center; background: #2c3e50; color: white; font-family: sans-serif; margin: 0; padding-top: 15px; touch-action: none; overflow: hidden; }
@@ -20,7 +20,6 @@
         .shop-btn { padding: 10px 0; cursor: pointer; border: 2px solid transparent; border-radius: 4px; color: white; font-weight: bold; font-size: 0.75em; text-align: center; background: #455a64; }
         .shop-btn.selected { border: 2px solid #f1c40f; transform: translateY(-3px); }
         #upgradeMenu { background: #8e44ad; padding: 10px; border-radius: 30px; display: none; gap: 10px; align-items: center; border: 2px solid #f1c40f; margin-top: 10px; width: 620px; justify-content: center; }
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -50,407 +49,8 @@
         <button class="shop-btn" id="b-bomb" style="background:#d35400" onclick="selectType('bomb')">砲擊 $120</button>
         <button class="shop-btn" id="b-summon" style="background:#f1c40f; color:#2c3e50" onclick="selectType('summon')">召喚 $140</button>
         <button class="shop-btn" id="b-trap" style="background:#8e44ad" onclick="selectType('trap')">陷阱 $140</button>
-    </div>                if(--t.cd<=0) {
-                    if(t.type==='summon') { spawns.push({x:14*40,y:7*40,ti:10,dmg:t.dmg,lv:t.lv}); t.cd=t.cdM; }
-                    else if(t.type==='trap') { let r=road[Math.floor(Math.random()*road.length)]; traps.push({x:r.x,y:r.y,dmg:t.dmg,lv:t.lv,isM:false,l:0}); t.cd=t.cdM; }
-                    else {
-                        let es = enemies.filter(e=>Math.hypot(e.x+20-(t.x+20), e.y+20-(t.y+20))<t.range);
-                        if(es.length>0) { bullets.push({x:t.x+20,y:t.y+20,target:es[0],dmg:t.dmg,t:t}); t.cd=t.cdM; }
-                    }
-                }
-            });
-
-            bullets = bullets.filter(b => {
-                let dx=b.target.x+20-b.x, dy=b.target.y+20-b.y, d=Math.sqrt(dx*dx+dy*dy);
-                if(d<15) {
-                    let dmg=b.dmg * (b.target.sl.m?1.2:1), c="#fff";
-                    if(b.t.type==='gun' && b.t.lv>=3 && Math.random()<(0.2+(b.t.lv-3)*0.04)) { dmg*=2.5; c="#ff3f34"; }
-                    if(b.t.type==='bomb' && b.t.lv>=3 && Math.random()<0.3) { dmg*=5; c="#f1c40f"; }
-                    b.target.hp-=dmg; addText(b.target.x+20,b.target.y,Math.floor(dmg),c);
-                    if(b.t.type==='ice') b.target.sl={v:0.5,l:40,m:false};
-                    return false;
-                }
-                b.x+=dx/d*12; b.y+=dy/d*12; ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(b.x,b.y,3,0,Math.PI*2); ctx.fill();
-                return b.target.hp>0;
-            });
-
-            spawns = spawns.filter(s => {
-                let p=path[s.ti], d=Math.hypot(p.x*40-s.x, p.y*40-s.y);
-                if(d<5) { s.ti--; if(s.ti<0) return false; }
-                else { s.x+=(p.x*40-s.x)/d*4; s.y+=(p.y*40-s.y)/d*4; }
-                let e=enemies.find(i=>Math.hypot(i.x-s.x, i.y-s.y)<30);
-                if(e) { e.hp-=s.dmg; if(s.lv>=7) enemies.forEach(i=>{if(Math.hypot(i.x-s.x,i.y-s.y)<80)i.hp-=s.dmg*2;}); return false; }
-                ctx.fillStyle="#2ecc71"; ctx.beginPath(); ctx.arc(s.x+20,s.y+20,8,0,Math.PI*2); ctx.fill(); return true;
-            });
-
-            enemies = enemies.filter(e => {
-                if(e.hp<e.max*0.3 && e.boss && !e.en) { e.en=true; e.sp*=2; e.fzI=60; }
-                if(e.fzI>0) e.fzI--;
-                if(e.st>0) { e.st--; } else {
-                    let s = e.sp * (e.sl.l>0?e.sl.v:1); if(e.sl.l>0) e.sl.l--; else e.sl.m=false;
-                    let t=path[e.ti], dx=t.x*40-e.x, dy=t.y*40-e.y, d=Math.sqrt(dx*dx+dy*dy);
-                    if(d<2) { e.ti++; if(e.ti>=path.length) { health-=e.boss?10:1; return false; } }
-                    else { e.x+=dx/d*s; e.y+=dy/d*s; }
-                }
-                if(e.boss && Math.random()<0.01) towers.forEach(t=>{if(Math.random()<0.1)t.fz=60;});
-                ctx.fillStyle=e.boss?"#8e44ad":"#c0392b"; ctx.beginPath(); ctx.arc(e.x+20,e.y+20,e.boss?18:12,0,Math.PI*2); ctx.fill();
-                if(e.hp<=0) { money+=Math.floor(25*mG); return false; } return true;
-            });
-
-            texts = texts.filter(t => { t.y-=1; t.l--; ctx.fillStyle=t.c; ctx.font=t.s+"px Arial"; ctx.fillText(t.t,t.x,t.y); return t.l>0; });
-            if(health<=0) { alert("Game Over!"); location.reload(); }
-            document.getElementById('money').innerText=money; document.getElementById('health').innerText=health; document.getElementById('wave').innerText=wave;
-            if(selT) { let c=Math.floor(props[selT.type][4]*Math.pow(1.6,selT.lv)); document.getElementById('upgradeCost').innerText=c; document.getElementById('towerInfo').innerText="Lv."+selT.lv; }
-            if(waveIn && spawnCnt>0) { if(++timer>60) { let b=wave%5===0; enemies.push({x:0,y:40,ti:1,hp:100*Math.pow(hpG,wave-1)*(b?15:1),max:100*Math.pow(hpG,wave-1)*(b?15:1),sp:b?1:1.5,boss:b,sl:{v:1,l:0,m:false},st:0,en:false,fzI:0}); spawnCnt--; timer=0; } }
-            else if(enemies.length===0) { waveIn=false; setTimeout(()=>{wave++; spawnCnt=5+wave; waveIn=true;},2000); }
-            requestAnimationFrame(loop);
-        }
-
-        function upgradeTower() {
-            let c=Math.floor(props[selT.type][4]*Math.pow(1.6,selT.lv));
-            if(money>=c) { money-=c; selT.lv++; selT.dmg*=1.65; selT.range=Math.min(280,selT.range+10); }
-        }
-    </script>
-</body>
-</html>        };
-
-        function startGame(h, m) { 
-            hpGrowth=h; moneyGrowth=m; 
-            document.getElementById('start-screen').classList.add('hidden'); 
-            gameRunning=true; waveInProgress=true; enemiesToSpawn=6; 
-            requestAnimationFrame(gameLoop); 
-        }
-
-        function calculateIncome() { return Math.floor(25 * Math.pow(1.2, currentWave - 1) * moneyGrowth); }
-        function addDamageText(x, y, text, color, size = 16) { damageTexts.push({x, y, text, color, size, life: 45, opacity: 1}); }
-        function deselectTower() { selectedTower=null; document.getElementById('shopControls').classList.remove('hidden'); document.getElementById('upgradeMenu').style.display='none'; }
-        function selectType(t) { currentType=(currentType===t)?null:t; document.querySelectorAll('.shop-btn').forEach(b=>b.classList.remove('selected')); if(currentType) { document.getElementById('btn-'+t).classList.add('selected'); deselectTower(); } }
-
-        function drawRangeCircle(x, y, range, fillColor, isDashed = false) {
-            if (range <= 0) return;
-            ctx.beginPath(); ctx.arc(x, y, range, 0, Math.PI * 2); ctx.fillStyle = fillColor; ctx.fill();
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.9)"; ctx.lineWidth = 2;
-            if(isDashed) ctx.setLineDash([6, 6]); else ctx.setLineDash([]);
-            ctx.stroke(); ctx.setLineDash([]);
-        }
-
-        function createExplosion(x, y, dmg) {
-            let radius = 0; const maxRadius = 80, duration = 20; let timer = 0;
-            function animateExplosion() {
-                if (timer < duration) {
-                    ctx.beginPath(); ctx.arc(x + 20, y + 20, radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(241, 196, 15, ${1 - timer / duration})`; ctx.fill();
-                    radius += maxRadius / duration; timer++; requestAnimationFrame(animateExplosion);
-                }
-            }
-            animateExplosion();
-            enemies.forEach(e => { if (Math.hypot(e.x - x, e.y - y) < maxRadius) { e.takeDamage(dmg); addDamageText(e.x + 20, e.y, "BOOM!", "#f1c40f", 20); } });
-        }
-
-        class Enemy {
-            constructor(wave, boss) {
-                this.x = pathPoints[0].x*40; this.y = pathPoints[0].y*40; this.tIdx = 1;
-                let bHp = 100 * Math.pow(hpGrowth, wave-1);
-                this.isBoss = boss; this.stunTimer = 0; this.isEnraged = false; this.immuneTimer = 0; this.skillCd = 240; this.hitTimer = 0; this.slowMap = new Map();
-                if(boss) {
-                    this.bossType = Math.random() < 0.5 ? "ICE_BOSS" : "DEVOURER";
-                    this.maxHp = this.bossType === "DEVOURER" ? bHp * 20 : bHp * 15;
-                    this.baseSpeed = this.bossType === "DEVOURER" ? 0.8 : 1.2;
-                } else {
-                    this.mobType = Math.random() < 0.2 ? "SPEEDSTER" : "NORMAL";
-                    this.maxHp = this.mobType === "SPEEDSTER" ? bHp * 0.5 : bHp;
-                    this.baseSpeed = this.mobType === "SPEEDSTER" ? 2.4 : 1.2;
-                }
-                this.hp = this.maxHp;
-            }
-            takeDamage(dmg) { 
-                if(this.isBoss && this.bossType === "DEVOURER" && Math.random() < 0.1) {
-                    this.hp = Math.min(this.maxHp, this.hp + dmg * 0.5); addDamageText(this.x + 20, this.y, "ABSORB", "#2ecc71", 14);
-                } else { this.hp -= dmg; this.hitTimer = 6; }
-            }
-            update() {
-                if(this.hitTimer > 0) this.hitTimer--;
-                if(this.isBoss && !this.isEnraged && this.hp < this.maxHp*0.3) { this.isEnraged = true; this.immuneTimer = 150; this.slowMap.clear(); }
-                if(this.immuneTimer > 0) { this.immuneTimer--; this.stunTimer = 0; }
-                if(this.stunTimer > 0) { this.stunTimer--; return; }
-                let totalSlow = 0; if(this.immuneTimer <= 0) this.slowMap.forEach((d, id) => { totalSlow += d.val; d.life--; if(d.life <= 0) this.slowMap.delete(id); });
-                let s = (this.baseSpeed * (this.isEnraged?2:1)) * (1 - Math.min(totalSlow, 0.7));
-                let t = pathPoints[this.tIdx]; let dx = t.x*40-this.x, dy = t.y*40-this.y, d = Math.sqrt(dx*dx+dy*dy);
-                if(d < 2) { this.tIdx++; if(this.tIdx>=pathPoints.length) { health -= this.isBoss?10:1; this.hp=0; } 
-                } else { this.x+=(dx/d)*s; this.y+=(dy/d)*s; }
-                if(this.isBoss && --this.skillCd <= 0) {
-                    if(this.bossType === "ICE_BOSS") towers.forEach(tw => { if(Math.random()<0.2) tw.frozen = 120; });
-                    this.skillCd = this.isEnraged?120:240;
-                }
-            }
-            draw() {
-                if(this.immuneTimer > 0) { ctx.strokeStyle = "#f1c40f"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(this.x+20, this.y+20, this.isBoss?25:15, 0, Math.PI*2); ctx.stroke(); }
-                if(this.isBoss) { ctx.fillStyle = (this.hitTimer > 0) ? "white" : (this.bossType === "DEVOURER" ? "#16a085" : "#8e44ad"); } 
-                else { ctx.fillStyle = (this.hitTimer > 0) ? "white" : (this.mobType === "SPEEDSTER" ? "#2ecc71" : (this.slowMap.size>0?"#74b9ff":"#c0392b")); }
-                ctx.beginPath(); ctx.arc(this.x+20, this.y+20, this.isBoss?(this.bossType==="DEVOURER"?22:18):12, 0, Math.PI*2); ctx.fill();
-                if (this.hp < this.maxHp) {
-                    const barW = this.isBoss?40:30, barH = this.isBoss?6:4;
-                    const bx = this.x+20-barW/2, by = this.y-5;
-                    ctx.fillStyle = "#555"; ctx.fillRect(bx, by, barW, barH);
-                    ctx.fillStyle = "#ff3f34"; ctx.fillRect(bx, by, barW * (this.hp/this.maxHp), barH);
-                }
-            }
-        }
-
-        function gameLoop() {
-            if(!gameRunning) return;
-            ctx.clearRect(0,0,600,400);
-            for(let y=0;y<10;y++) for(let x=0;x<15;x++) { ctx.fillStyle = mapLayout[y][x]===1?'#d35400':'#27ae60'; ctx.fillRect(x*40, y*40, 40, 40); }
-
-            if(currentType && isMouseDown && !isMouseOut) {
-                const gx = Math.floor(mouseX/40), gy = Math.floor(mouseY/40);
-                const canBuild = gx >= 0 && gx < 15 && gy >= 0 && gy < 10 && mapLayout[gy][gx] === 0;
-                drawRangeCircle(mouseX, mouseY, towerProps[currentType][0], canBuild ? "rgba(255, 255, 255, 0.2)" : "rgba(231, 76, 60, 0.5)", true);
-            }
-            if(selectedTower) drawRangeCircle(selectedTower.x+20, selectedTower.y+20, selectedTower.range, "rgba(255, 255, 255, 0.15)", true);
-
-            roadTraps.forEach((p, idx) => {
-                if (!p.isMire) {
-                    ctx.fillStyle = "rgba(44, 62, 80, 0.8)"; ctx.fillRect(p.x + 12, p.y + 12, 16, 16);
-                    let tar = enemies.find(e => Math.hypot(e.x + 20 - (p.x + 20), e.y + 20 - (p.y + 20)) < 20);
-                    if (tar) {
-                        if (tar.immuneTimer <= 0) tar.stunTimer = tar.isBoss ? 60 : 120;
-                        tar.takeDamage(p.dmg); addDamageText(tar.x + 20, tar.y, Math.floor(p.dmg), "#ffffff");
-                        if (p.level >= 7) { p.isMire = true; p.life = 180; } else { roadTraps.splice(idx, 1); }
-                    }
-                } else {
-                    p.life--; ctx.fillStyle = "rgba(142, 68, 173, 0.3)"; ctx.beginPath(); ctx.arc(p.x + 20, p.y + 20, 40, 0, Math.PI * 2); ctx.fill();
-                    enemies.forEach(e => { if (Math.hypot(e.x - p.x, e.y - p.y) < 45) e.slowMap.set("mire_" + p.x + "_" + p.y, {val: 0.4, life: 2}); });
-                    if (p.life <= 0) roadTraps.splice(idx, 1);
-                }
-            });
-
-            towers.forEach(t => {
-                ctx.fillStyle = t.color; ctx.fillRect(t.x+2, t.y+2, 36, 36);
-                ctx.fillStyle = "white"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.fillText(`Lv.${t.level}`, t.x+20, t.y+24);
-                if(t.frozen > 0) { t.frozen--; ctx.fillStyle="rgba(0,255,255,0.4)"; ctx.fillRect(t.x+2, t.y+2, 36, 36); return; }
-                if(--t.cd <= 0) {
-                    if(t.type==='summon') { summons.push({x:14*40, y:7*40, tIdx:10, dmg:t.dmg, towerRef: t}); t.cd=t.cdMax; }
-                    else if(t.type==='trap') { let c=roadCells[Math.floor(Math.random()*roadCells.length)]; roadTraps.push({x:c.x, y:c.y, dmg:t.dmg, level: t.level}); t.cd=t.cdMax; }
-                    else {
-                        let targetsInRange = enemies.filter(e => Math.hypot(e.x+20-(t.x+20), e.y+20-(t.y+20)) < t.range);
-                        if(targetsInRange.length > 0) {
-                            let tar = (t.type === 'ice') ? (targetsInRange.find(e => e.slowMap.size === 0) || targetsInRange[0]) : targetsInRange[0];
-                            bullets.push({x:t.x+20, y:t.y+20, target:tar, dmg:t.dmg, tower:t}); t.cd=t.cdMax; 
-                        }
-                    }
-                }
-            });
-
-            bullets = bullets.filter(b => {
-                let dx = b.target.x+20-b.x, dy = b.target.y+20-b.y, d = Math.sqrt(dx*dx+dy*dy);
-                if(d < 15) {
-                    let fDmg = b.dmg, textColor = "#ffffff", sz = 16;
-                    if(b.tower.type==='gun' && b.tower.level>=3) {
-                        let pc = Math.min(0.6, 0.2 + (b.tower.level - 3) * 0.04);
-                        if(Math.random() < pc) { fDmg *= Math.min(2.5, 2.0 + (b.tower.level - 3) * 0.1); textColor = "#ff3f34"; sz = 22; }
-                    } else if(b.tower.type==='bomb' && b.tower.level>=3) {
-                        if(Math.random() < Math.min(0.5, 0.2 + (b.tower.level - 3) * 0.05)) { fDmg *= 5; textColor = "#f1c40f"; sz = 22; }
-                    }
-                    if (Array.from(b.target.slowMap.keys()).some(k => k.startsWith("mire"))) fDmg *= 1.2;
-                    b.target.takeDamage(fDmg); addDamageText(b.target.x+20, b.target.y, Math.floor(fDmg), textColor, sz);
-                    if(b.tower.type==='ice') {
-                        b.target.slowMap.set(b.tower.id, {val: 0.5, life: 60});
-                        if(b.tower.level >= 5 && Math.random() < 0.1 && b.target.immuneTimer <= 0) { b.target.stunTimer = 60; addDamageText(b.target.x+20, b.target.y-10, "FROZEN!", "#74b9ff", 20); }
-                    }
-                    return false;
-                }
-                b.x+=(dx/d)*10; b.y+=(dy/d)*10; ctx.fillStyle="white"; ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, Math.PI*2); ctx.fill(); return b.target.hp>0;
-            });
-
-            summons = summons.filter(s => {
-                let tp = pathPoints[s.tIdx]; let dx=tp.x*40-s.x, dy=tp.y*40-s.y, d=Math.sqrt(dx*dx+dy*dy);
-                if(d<5){ s.tIdx--; if(s.tIdx<0) { if (s.towerRef && s.towerRef.level >= 7) createExplosion(s.x, s.y, s.dmg * 3); return false; } 
-                } else { s.x+=(dx/d)*3; s.y+=(dy/d)*3; }
-                let hit = enemies.find(e => Math.hypot(e.x-s.x, e.y-s.y)<25);
-                if(hit){ hit.takeDamage(s.dmg); addDamageText(hit.x+20, hit.y, Math.floor(s.dmg), "#2ecc71", 18); if (s.towerRef && s.towerRef.level >= 7) createExplosion(s.x, s.y, s.dmg * 3); return false; }
-                ctx.fillStyle="#2ecc71"; ctx.beginPath(); ctx.arc(s.x+20, s.y+20, 8, 0, Math.PI*2); ctx.fill(); return true;
-            });
-
-            enemies = enemies.filter(e => { 
-                e.update(); e.draw(); 
-                if(e.hp<=0 && e.tIdx < pathPoints.length) { money += calculateIncome(); } 
-                return e.hp>0; 
-            });
-
-                    ctx.beginPath(); ctx.arc(x + 20, y + 20, radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(241, 196, 15, ${1 - timer / duration})`; ctx.fill();
-                    radius += maxRadius / duration; timer++; requestAnimationFrame(animate);
-                }
-            }
-            animate();
-            enemies.forEach(e => { if (Math.hypot(e.x - x, e.y - y) < maxRadius) { e.takeDamage(dmg); addDamageText(e.x + 20, e.y, "BOOM!", "#f1c40f", 20); } });
-        }
-
-        canvas.addEventListener('mousemove', e => { const r = canvas.getBoundingClientRect(); mouseX = e.clientX-r.left; mouseY = e.clientY-r.top; isMouseOut = false; });
-        canvas.addEventListener('mousedown', e => {
-            const mx = Math.floor(mouseX/40), my = Math.floor(mouseY/40);
-            let clickedExistingTower = towers.find(t => Math.floor(t.x/40)===mx && Math.floor(t.y/40)===my);
-            if (clickedExistingTower) {
-                currentType = null; document.querySelectorAll('.shop-btn').forEach(b=>b.classList.remove('selected'));
-                selectedTower = clickedExistingTower; document.getElementById('shopControls').classList.add('hidden'); 
-                document.getElementById('upgradeMenu').style.display='flex'; updateUpgradeUI(); isMouseDown = false;
-            } else { if (currentType) { isMouseDown = true; } else { deselectTower(); } }
-        });
-        canvas.addEventListener('mouseup', e => {
-            if(isMouseDown && currentType && !isMouseOut) {
-                const mx = Math.floor(mouseX/40), my = Math.floor(mouseY/40);
-                if(mx >= 0 && mx < 15 && my >= 0 && my < 10 && mapLayout[my][mx]===0 && money>=towerProps[currentType][4]) {
-                    towers.push({id:Date.now(), x:mx*40, y:my*40, type:currentType, level:1, range:towerProps[currentType][0], dmg:towerProps[currentType][1], cd:0, cdMax:towerProps[currentType][2], color:towerProps[currentType][3], frozen:0});
-                    money -= towerProps[currentType][4]; mapLayout[my][mx]=2;
-                }
-            }
-            isMouseDown = false;
-        });
-
-        class Enemy {
-            constructor(wave, boss) {
-                this.x = pathPoints[0].x*40; this.y = pathPoints[0].y*40; this.tIdx = 1;
-                let bHp = 100 * Math.pow(hpGrowth, wave-1);
-                this.isBoss = boss; this.stunTimer = 0; this.isEnraged = false; this.immuneTimer = 0; this.skillCd = 240; this.hitTimer = 0; this.slowMap = new Map();
-                
-                if(boss) {
-                    this.bossType = Math.random() < 0.5 ? "ICE_BOSS" : "DEVOURER";
-                    this.maxHp = this.bossType === "DEVOURER" ? bHp * 20 : bHp * 15;
-                    this.baseSpeed = this.bossType === "DEVOURER" ? 0.8 : 1.2;
-                } else {
-                    this.mobType = Math.random() < 0.2 ? "SPEEDSTER" : "NORMAL";
-                    this.maxHp = this.mobType === "SPEEDSTER" ? bHp * 0.5 : bHp;
-                    this.baseSpeed = this.mobType === "SPEEDSTER" ? 2.4 : 1.2;
-                }
-                this.hp = this.maxHp;
-            }
-            takeDamage(dmg) { 
-                if(this.isBoss && this.bossType === "DEVOURER" && Math.random() < 0.1) {
-                    this.hp = Math.min(this.maxHp, this.hp + dmg * 0.5); addDamageText(this.x + 20, this.y, "ABSORB", "#2ecc71", 14);
-                } else { this.hp -= dmg; this.hitTimer = 6; }
-            }
-            update() {
-                if(this.hitTimer > 0) this.hitTimer--;
-                if(this.isBoss && !this.isEnraged && this.hp < this.maxHp*0.3) { this.isEnraged = true; this.immuneTimer = 150; this.slowMap.clear(); }
-                if(this.immuneTimer > 0) { this.immuneTimer--; this.stunTimer = 0; }
-                if(this.stunTimer > 0) { this.stunTimer--; return; }
-                let totalSlow = 0; if(this.immuneTimer <= 0) this.slowMap.forEach((d, id) => { totalSlow += d.val; d.life--; if(d.life <= 0) this.slowMap.delete(id); });
-                let s = (this.baseSpeed * (this.isEnraged?2:1)) * (1 - Math.min(totalSlow, 0.7));
-                let t = pathPoints[this.tIdx]; let dx = t.x*40-this.x, dy = t.y*40-this.y, d = Math.sqrt(dx*dx+dy*dy);
-                if(d < 2) { this.tIdx++; if(this.tIdx>=pathPoints.length) { health -= this.isBoss?10:1; this.hp=0; } 
-                } else { this.x+=(dx/d)*s; this.y+=(dy/d)*s; }
-                if(this.isBoss && --this.skillCd <= 0) {
-                    if(this.bossType === "ICE_BOSS") towers.forEach(tw => { if(Math.random()<0.2) tw.frozen = 120; });
-                    this.skillCd = this.isEnraged?120:240;
-                }
-            }
-            draw() {
-                if(this.immuneTimer > 0) { ctx.strokeStyle = "#f1c40f"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(this.x+20, this.y+20, this.isBoss?25:15, 0, Math.PI*2); ctx.stroke(); }
-                if(this.isBoss) { ctx.fillStyle = (this.hitTimer > 0) ? "white" : (this.bossType === "DEVOURER" ? "#16a085" : "#8e44ad"); } 
-                else { ctx.fillStyle = (this.hitTimer > 0) ? "white" : (this.mobType === "SPEEDSTER" ? "#2ecc71" : (this.slowMap.size>0?"#74b9ff":"#c0392b")); }
-                ctx.beginPath(); ctx.arc(this.x+20, this.y+20, this.isBoss?(this.bossType==="DEVOURER"?22:18):12, 0, Math.PI*2); ctx.fill();
-                if (this.hp < this.maxHp) {
-                    const barW = this.isBoss?40:30, barH = this.isBoss?6:4;
-                    const bx = this.x+20-barW/2, by = this.y-5;
-                    ctx.fillStyle = "#555"; ctx.fillRect(bx, by, barW, barH);
-                    ctx.fillStyle = "#ff3f34"; ctx.fillRect(bx, by, barW * (this.hp/this.maxHp), barH);
-                }
-            }
-        }
-
-        function gameLoop() {
-            if(!gameRunning) return;
-            ctx.clearRect(0,0,600,400);
-            for(let y=0;y<10;y++) for(let x=0;x<15;x++) { ctx.fillStyle = mapLayout[y][x]===1?'#d35400':'#27ae60'; ctx.fillRect(x*40, y*40, 40, 40); }
-
-            // 白色虛線範圍圈 (購買預覽與選取)
-            if(currentType && isMouseDown && !isMouseOut) {
-                const gx = Math.floor(mouseX/40), gy = Math.floor(mouseY/40);
-                const canBuild = gx >= 0 && gx < 15 && gy >= 0 && gy < 10 && mapLayout[gy][gx] === 0;
-                drawRangeCircle(mouseX, mouseY, towerProps[currentType][0], canBuild ? "rgba(255, 255, 255, 0.2)" : "rgba(231, 76, 60, 0.5)", true);
-            }
-            if(selectedTower) drawRangeCircle(selectedTower.x+20, selectedTower.y+20, selectedTower.range, "rgba(255, 255, 255, 0.15)", true);
-
-            roadTraps.forEach((p, idx) => {
-                if (!p.isMire) {
-                    ctx.fillStyle = "rgba(44, 62, 80, 0.8)"; ctx.fillRect(p.x + 12, p.y + 12, 16, 16);
-                    let tar = enemies.find(e => Math.hypot(e.x + 20 - (p.x + 20), e.y + 20 - (p.y + 20)) < 20);
-                    if (tar) {
-                        if (tar.immuneTimer <= 0) tar.stunTimer = tar.isBoss ? 60 : 120;
-                        tar.takeDamage(p.dmg); addDamageText(tar.x + 20, tar.y, Math.floor(p.dmg), "#ffffff");
-                        if (p.level >= 7) { p.isMire = true; p.life = 180; } else { roadTraps.splice(idx, 1); }
-                    }
-                } else {
-                    p.life--; ctx.fillStyle = "rgba(142, 68, 173, 0.3)"; ctx.beginPath(); ctx.arc(p.x + 20, p.y + 20, 40, 0, Math.PI * 2); ctx.fill();
-                    enemies.forEach(e => { if (Math.hypot(e.x - p.x, e.y - p.y) < 45) e.slowMap.set("mire_" + p.x + "_" + p.y, {val: 0.4, life: 2}); });
-                    if (p.life <= 0) roadTraps.splice(idx, 1);
-                }
-            });
-
-            towers.forEach(t => {
-                ctx.fillStyle = t.color; ctx.fillRect(t.x+2, t.y+2, 36, 36);
-                ctx.fillStyle = "white"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.fillText(`Lv.${t.level}`, t.x+20, t.y+24);
-                if(t.frozen > 0) { t.frozen--; ctx.fillStyle="rgba(0,255,255,0.4)"; ctx.fillRect(t.x+2, t.y+2, 36, 36); return; }
-                if(--t.cd <= 0) {
-                    if(t.type==='summon') { summons.push({x:14*40, y:7*40, tIdx:10, dmg:t.dmg, towerRef: t}); t.cd=t.cdMax; }
-                    else if(t.type==='trap') { let c=roadCells[Math.floor(Math.random()*roadCells.length)]; roadTraps.push({x:c.x, y:c.y, dmg:t.dmg, level: t.level}); t.cd=t.cdMax; }
-                    else {
-                        let targetsInRange = enemies.filter(e => Math.hypot(e.x+20-(t.x+20), e.y+20-(t.y+20)) < t.range);
-                        if(targetsInRange.length > 0) {
-                            let tar = (t.type === 'ice') ? (targetsInRange.find(e => e.slowMap.size === 0) || targetsInRange[0]) : targetsInRange[0];
-                            bullets.push({x:t.x+20, y:t.y+20, target:tar, dmg:t.dmg, tower:t}); t.cd=t.cdMax; 
-                        }
-                    }
-                }
-            });
-
-            bullets = bullets.filter(b => {
-                let dx = b.target.x+20-b.x, dy = b.target.y+20-b.y, d = Math.sqrt(dx*dx+dy*dy);
-                if(d < 15) {
-                    let fDmg = b.dmg, textColor = "#ffffff", sz = 16;
-                    if(b.tower.type==='gun' && b.tower.level>=3) {
-                        let pc = Math.min(0.6, 0.2 + (b.tower.level - 3) * 0.04);
-                        if(Math.random() < pc) { fDmg *= Math.min(2.5, 2.0 + (b.tower.level - 3) * 0.1); textColor = "#ff3f34"; sz = 22; }
-                    } else if(b.tower.type==='bomb' && b.tower.level>=3) {
-                        if(Math.random() < Math.min(0.5, 0.2 + (b.tower.level - 3) * 0.05)) { fDmg *= 5; textColor = "#f1c40f"; sz = 22; }
-                    }
-                    if (Array.from(b.target.slowMap.keys()).some(k => k.startsWith("mire"))) fDmg *= 1.2;
-                    b.target.takeDamage(fDmg); addDamageText(b.target.x+20, b.target.y, Math.floor(fDmg), textColor, sz);
-                    if(b.tower.type==='ice') {
-                        b.target.slowMap.set(b.tower.id, {val: 0.5, life: 60});
-                        if(b.tower.level >= 5 && Math.random() < 0.1 && b.target.immuneTimer <= 0) { b.target.stunTimer = 60; addDamageText(b.target.x+20, b.target.y-10, "FROZEN!", "#74b9ff", 20); }
-                    }
-                    return false;
-                }
-                b.x+=(dx/d)*10; b.y+=(dy/d)*10; ctx.fillStyle="white"; ctx.beginPath(); ctx.arc(b.x, b.y, 3, 0, Math.PI*2); ctx.fill(); return b.target.hp>0;
-            });
-
-            summons = summons.filter(s => {
-                let tp = pathPoints[s.tIdx]; let dx=tp.x*40-s.x, dy=tp.y*40-s.y, d=Math.sqrt(dx*dx+dy*dy);
-                if(d<5){ s.tIdx--; if(s.tIdx<0) { if (s.towerRef && s.towerRef.level >= 7) createExplosion(s.x, s.y, s.dmg * 3); return false; } 
-                } else { s.x+=(dx/d)*3; s.y+=(dy/d)*3; }
-                let hit = enemies.find(e => Math.hypot(e.x-s.x, e.y-s.y)<25);
-                if(hit){ hit.takeDamage(s.dmg); addDamageText(hit.x+20, hit.y, Math.floor(s.dmg), "#2ecc71", 18); if (s.towerRef && s.towerRef.level >= 7) createExplosion(s.x, s.y, s.dmg * 3); return false; }
-                ctx.fillStyle="#2ecc71"; ctx.beginPath(); ctx.arc(s.x+20, s.y+20, 8, 0, Math.PI*2); ctx.fill(); return true;
-            });
-
-            enemies = enemies.filter(e => { 
-                e.update(); e.draw(); 
-                if(e.hp<=0 && e.tIdx < pathPoints.length) { 
-                    let inc = calculateIncome(); if(e.isBoss && hpGrowth === 1.5) { inc *= 5; }
-                    money += inc; 
-                } return e.hp>0; 
-            });
-
-            damageTexts = damageTexts.filter(t => { 
-                t.y -= 0.8; t.life--; t.opacity = t.life / 45; 
-                let hex = t.color.replace('#',''); let r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16); 
-                ctx.fillStyle = `rgba(${r},${g},${b},${t.opacity})`; ctx.font = `bold ${t.size}px Arial`; ctx.textAlign="center"; ctx.fillText(t.text, t.x, t.y); return t.life > 0; 
-            });
-
-            if(health<=0) { health=0; gameRunn
-                <script>
+    </div>
+    <script>
         let cvs, ctx, money=300, health=20, wave=1, running=false;
         let towers=[], enemies=[], bullets=[], traps=[], texts=[], spawns=[], mouse={x:0,y:0,down:false};
         let curT=null, selT=null, hpG=1, mG=1, waveIn=false, spawnCnt=0, timer=0;
@@ -480,7 +80,7 @@
             loop();
         };
 
-        function startGame(h, m) { hpG=h; mG=m; document.getElementById('start-screen').classList.add('hidden'); running=true; waveIn=true; spawnCnt=6; }
+        function startGame(h, m) { hpG=h; mG=m; document.getElementById('start-screen').style.display='none'; running=true; waveIn=true; spawnCnt=6; }
         function deselect() { selT=null; document.getElementById('upgradeMenu').style.display='none'; }
         function selectType(t) { curT=t; document.querySelectorAll('.shop-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('b-'+t).classList.add('selected'); deselect(); }
         function addText(x,y,t,c,s=16) { texts.push({x,y,t,c,s,l:40}); }
@@ -494,11 +94,9 @@
             for(let y=0;y<10;y++) for(let x=0;x<15;x++) { ctx.fillStyle=map[y][x]===1?'#d35400':'#27ae60'; ctx.fillRect(x*40,y*40,40,40); }
             if(!running) { requestAnimationFrame(loop); return; }
 
-            // 範圍顯示邏輯
             if(curT && mouse.down) { ctx.beginPath(); ctx.arc(mouse.x,mouse.y,props[curT][0],0,Math.PI*2); ctx.strokeStyle="rgba(255,255,255,0.5)"; ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]); }
             if(selT) { ctx.beginPath(); ctx.arc(selT.x+20,selT.y+20,selT.range,0,Math.PI*2); ctx.strokeStyle="white"; ctx.stroke(); }
 
-            // 陷阱與元素沼澤
             traps = traps.filter(p => {
                 if(p.isM) {
                     p.l--; ctx.fillStyle="rgba(142,68,173,0.3)"; ctx.beginPath(); ctx.arc(p.x+20,p.y+20,45,0,Math.PI*2); ctx.fill();
@@ -512,7 +110,6 @@
                 }
             });
 
-            // 塔攻擊邏輯
             towers.forEach(t => {
                 ctx.fillStyle=t.color; ctx.fillRect(t.x+2,t.y+2,36,36);
                 if(t.fz>0) { t.fz--; ctx.fillStyle="rgba(0,255,255,0.3)"; ctx.fillRect(t.x+2,t.y+2,36,36); return; }
@@ -526,7 +123,6 @@
                 }
             });
 
-            // 子彈與傷害計算
             bullets = bullets.filter(b => {
                 let dx=b.target.x+20-b.x, dy=b.target.y+20-b.y, d=Math.sqrt(dx*dx+dy*dy);
                 if(d<15) {
@@ -541,7 +137,6 @@
                 return b.target.hp>0;
             });
 
-            // 召喚獸、敵人與波次控制
             spawns = spawns.filter(s => {
                 let p=path[s.ti], d=Math.hypot(p.x*40-s.x, p.y*40-s.y);
                 if(d<5) { s.ti--; if(s.ti<0) return false; }
@@ -565,7 +160,7 @@
             });
 
             texts = texts.filter(t => { t.y-=1; t.l--; ctx.fillStyle=t.c; ctx.font=t.s+"px Arial"; ctx.fillText(t.t,t.x,t.y); return t.l>0; });
-            if(health<=0) { alert("遊戲結束！生存波次: "+wave); location.reload(); }
+            if(health<=0) { alert("Game Over!"); location.reload(); }
             document.getElementById('money').innerText=money; document.getElementById('health').innerText=health; document.getElementById('wave').innerText=wave;
             if(selT) { let c=Math.floor(props[selT.type][4]*Math.pow(1.6,selT.lv)); document.getElementById('upgradeCost').innerText=c; document.getElementById('towerInfo').innerText="Lv."+selT.lv; }
             if(waveIn && spawnCnt>0) { if(++timer>60) { let b=wave%5===0; enemies.push({x:0,y:40,ti:1,hp:100*Math.pow(hpG,wave-1)*(b?15:1),max:100*Math.pow(hpG,wave-1)*(b?15:1),sp:b?1:1.5,boss:b,sl:{v:1,l:0,m:false},st:0,en:false,fzI:0}); spawnCnt--; timer=0; } }
@@ -574,4 +169,4 @@
         }
     </script>
 </body>
-</html>           
+</html>
