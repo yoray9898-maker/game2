@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>元素戰爭：強敵降臨 (視覺強化版)</title>
+    <title>元素戰爭：強敵與終極技能版</title>
     <style>
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
         body { display: flex; flex-direction: column; align-items: center; background-color: #2c3e50; color: white; font-family: 'Microsoft JhengHei', Arial, sans-serif; margin: 0; padding-top: 15px; overflow: hidden; touch-action: none; }
@@ -28,15 +28,15 @@
         <div class="stat-box"><span class="label">金錢</span><span id="money" class="stat">300</span></div>
         <div class="stat-box"><span class="label">生命</span><span id="health" class="stat">20</span></div>
         <div class="stat-box"><span class="label">波次</span><span id="waveDisplay" class="stat">1</span></div>
-        <div class="stat-box"><span class="label">當前獎勵</span><span id="rewardDisplay" class="stat">25</span></div>
+        <div class="stat-box"><span class="label">預估波次獎勵</span><span id="rewardDisplay" class="stat">25</span></div>
     </div>
 
     <div id="game-container">
         <div id="start-screen" class="overlay">
-            <h1 style="color:#f1c40f; font-size: 2em; margin-bottom: 20px;">元素戰爭：強敵降臨</h1>
+            <h1 style="color:#f1c40f; font-size: 2em; margin-bottom: 20px;">元素戰爭：無限進化</h1>
             <button class="diff-btn" style="background:#2ecc71;" onclick="startGame(1.0, 1.0, '簡單')"><b>簡單模式</b><span>血量 100% | 金錢倍率 1.0</span></button>
             <button class="diff-btn" style="background:#3498db;" onclick="startGame(1.2, 1.2, '普通')"><b>普通模式</b><span>血量 120% | 金錢倍率 1.2</span></button>
-            <button class="diff-btn" style="background:#e74c3c;" onclick="startGame(1.5, 1.4, '困難')"><b>困難模式</b><span>血量 150% | 金錢倍率 1.4 | Boss 5倍金幣</span></button>
+            <button class="diff-btn" style="background:#e74c3c;" onclick="startGame(1.5, 1.4, '困難')"><b>困難模式</b><span>血量 150% | 金錢倍率 1.4 | Boss 獎金 x5</span></button>
         </div>
         <div id="game-over-screen" class="overlay hidden">
             <h1 style="color:#ff3f34; font-size: 2.5em;">戰地失守</h1>
@@ -70,16 +70,33 @@
 
         const mapLayout = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,1,1,1,1,1,1,1,0],[0,0,0,0,1,0,0,1,0,0,0,0,0,1,0],[0,0,1,1,1,0,0,1,0,0,0,0,0,1,0],[0,0,1,0,0,0,0,1,0,0,1,1,1,1,0],[0,0,1,1,1,1,1,1,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]];
         const pathPoints = [{x:0,y:1},{x:4,y:1},{x:4,y:4},{x:2,y:4},{x:2,y:6},{x:7,y:6},{x:7,y:2},{x:13,y:2},{x:13,y:5},{x:10,y:5},{x:10,y:7},{x:14,y:7}];
-        const towerProps = { gun:[140,25,18,'#2980b9',50], ice:[110,12,35,'#3498db',80], bomb:[170,60,65,'#d35400',120], summon:[0,150,360,'#f1c40f',140], trap:[0,25,300,'#8e44ad',140] };
+        
+        // 塔設定：範圍, 傷害, CD, 顏色, 價格
+        const towerProps = { 
+            gun:[140,25,18,'#2980b9',50], 
+            ice:[110,12,35,'#3498db',80], 
+            bomb:[170,60,65,'#d35400',120], 
+            summon:[0,150,360,'#f1c40f',140], 
+            trap:[0,25,300,'#8e44ad',140] 
+        };
+
         const roadCells = [];
         for(let y=0;y<10;y++) for(let x=0;x<15;x++) if(mapLayout[y][x]===1) roadCells.push({x:x*40, y:y*40});
 
         function calculateIncome() { return Math.floor(25 * Math.pow(1.2, currentWave - 1) * moneyGrowth); }
-        function startGame(h, m, name) { hpGrowth=h; moneyGrowth=m; document.getElementById('start-screen').classList.add('hidden'); gameRunning=true; waveInProgress=true; enemiesToSpawn=6; requestAnimationFrame(gameLoop); }
-        function addDamageText(x, y, text, color, size = 16) { damageTexts.push({x, y, text, color, size, life: 45, opacity: 1}); }
-        
+
+        function startGame(h, m, name) { 
+            hpGrowth=h; moneyGrowth=m; 
+            document.getElementById('start-screen').classList.add('hidden'); 
+            gameRunning=true; waveInProgress=true; enemiesToSpawn=6; requestAnimationFrame(gameLoop); 
+        }
+
+        function addDamageText(x, y, text, color, size = 16) {
+            damageTexts.push({x, y, text, color, size, life: 45, opacity: 1});
+        }
+
         function drawRangeCircle(x, y, range, fillColor, isDashed = false) {
-            if (range <= 0) return; // 召喚/陷阱塔不顯示
+            if (range <= 0) return;
             ctx.beginPath(); ctx.arc(x, y, range, 0, Math.PI * 2); ctx.fillStyle = fillColor; ctx.fill();
             ctx.strokeStyle = "rgba(255, 255, 255, 0.9)"; ctx.lineWidth = 2;
             if(isDashed) ctx.setLineDash([6, 6]); else ctx.setLineDash([]);
@@ -125,6 +142,7 @@
                 this.x = pathPoints[0].x*40; this.y = pathPoints[0].y*40; this.tIdx = 1;
                 let bHp = 100 * Math.pow(hpGrowth, wave-1);
                 this.isBoss = boss; this.stunTimer = 0; this.isEnraged = false; this.immuneTimer = 0; this.skillCd = 240; this.hitTimer = 0; this.slowMap = new Map();
+                
                 if(boss) {
                     this.bossType = Math.random() < 0.5 ? "ICE_BOSS" : "DEVOURER";
                     this.maxHp = this.bossType === "DEVOURER" ? bHp * 20 : bHp * 15;
@@ -175,16 +193,13 @@
             ctx.clearRect(0,0,600,400);
             for(let y=0;y<10;y++) for(let x=0;x<15;x++) { ctx.fillStyle = mapLayout[y][x]===1?'#d35400':'#27ae60'; ctx.fillRect(x*40, y*40, 40, 40); }
 
-            // 購買時的虛線預覽 (白色)
+            // 白色虛線範圍圈 (購買預覽與選取)
             if(currentType && isMouseDown && !isMouseOut) {
                 const gx = Math.floor(mouseX/40), gy = Math.floor(mouseY/40);
                 const canBuild = gx >= 0 && gx < 15 && gy >= 0 && gy < 10 && mapLayout[gy][gx] === 0;
                 drawRangeCircle(mouseX, mouseY, towerProps[currentType][0], canBuild ? "rgba(255, 255, 255, 0.2)" : "rgba(231, 76, 60, 0.5)", true);
             }
-            // 選取現有的塔也顯示虛線圈 (白色)
-            if(selectedTower) {
-                drawRangeCircle(selectedTower.x+20, selectedTower.y+20, selectedTower.range, "rgba(255, 255, 255, 0.15)", true);
-            }
+            if(selectedTower) drawRangeCircle(selectedTower.x+20, selectedTower.y+20, selectedTower.range, "rgba(255, 255, 255, 0.15)", true);
 
             roadTraps.forEach((p, idx) => {
                 if (!p.isMire) {
@@ -252,7 +267,7 @@
             enemies = enemies.filter(e => { 
                 e.update(); e.draw(); 
                 if(e.hp<=0 && e.tIdx < pathPoints.length) { 
-                    let inc = calculateIncome(); if(e.isBoss && hpGrowth === 1.5) { inc *= 5; addDamageText(e.x+20, e.y-20, "BOSS BOUNTY x5!", "#f1c40f", 24); }
+                    let inc = calculateIncome(); if(e.isBoss && hpGrowth === 1.5) { inc *= 5; }
                     money += inc; 
                 } return e.hp>0; 
             });
@@ -263,4 +278,4 @@
                 ctx.fillStyle = `rgba(${r},${g},${b},${t.opacity})`; ctx.font = `bold ${t.size}px Arial`; ctx.textAlign="center"; ctx.fillText(t.text, t.x, t.y); return t.life > 0; 
             });
 
-            if(health<=0) { health=0; gameRunning=false; document.getElementById('finalStats').innerHTM
+            if(health<=0) { health=0; gameRunn
