@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=640, user-scalable=no">
-    <title>元素戰爭：流暢修復版</title>
+    <title>元素戰爭：策略優化版</title>
     <style>
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
         body { display: flex; flex-direction: column; align-items: center; background: #2c3e50; color: white; font-family: sans-serif; margin: 0; padding-top: 15px; touch-action: none; overflow: hidden; }
@@ -16,6 +16,7 @@
         canvas { background-color: #ecf0f1; border: 6px solid #34495e; border-radius: 4px; display: block; cursor: crosshair; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 45, 55, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
         .btn { width: 300px; padding: 12px; margin: 8px 8px 4px 8px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 rgba(0,0,0,0.3); transition: 0.2s; }
+        .diff-hint { font-size: 0.85em; color: #bdc3c7; margin-bottom: 12px; }
         .controls { margin-top: 10px; display: grid; grid-template-columns: repeat(6, 1fr); width: 620px; background: #34495e; padding: 8px; border-radius: 4px; gap: 5px; }
         
         .shop-btn { padding: 10px 0; cursor: pointer; border: 2px solid transparent; border-radius: 4px; color: white; font-weight: bold; font-size: 0.7em; text-align: center; box-shadow: 0 3px 0 rgba(0,0,0,0.3); transition: 0.2s; }
@@ -34,16 +35,19 @@
     <div class="ui-panel">
         <div class="stat-box"><span class="label">金錢</span><span id="money" class="stat">300</span></div>
         <div class="stat-box"><span class="label">生命</span><span id="health" class="stat">20</span></div>
-        <div class="stat-box"><span class="label">波次</span><span id="wave" class="stat">1</span></div>
-        <div class="stat-box"><span class="label">難度加成</span><span id="killReward" class="stat">1.0x</span></div>
+        <div class="stat-box"><span class="label">目前波次</span><span id="wave" class="stat">1</span></div>
+        <div class="stat-box"><span class="label">獎勵倍率</span><span id="killReward" class="stat">1.0x</span></div>
     </div>
 
     <div id="game-container">
         <div id="start-screen" class="overlay">
-            <h1 style="color:#f1c40f">元素戰爭：最終修復版</h1>
-            <button class="btn" style="background:#2ecc71" onclick="startGame(1, 1.0)">簡單</button>
-            <button class="btn" style="background:#3498db" onclick="startGame(1.3, 1.2)">一般</button>
-            <button class="btn" style="background:#e74c3c" onclick="startGame(1.5, 1.4)">困難</button>
+            <h1 style="color:#f1c40f">元素戰爭：最終整合</h1>
+            <button class="btn" style="background:#2ecc71" onclick="startGame(1, 1.0)">簡單模式</button>
+            <div class="diff-hint">敵人血量 x1.0 | 擊殺獎勵 x1.0</div>
+            <button class="btn" style="background:#3498db" onclick="startGame(1.3, 1.2)">一般難度</button>
+            <div class="diff-hint">敵人血量 x1.3 | 擊殺獎勵 x1.2</div>
+            <button class="btn" style="background:#e74c3c" onclick="startGame(1.5, 1.4)">困難難度</button>
+            <div class="diff-hint">敵人血量 x1.5 | 擊殺獎勵 x1.4</div>
         </div>
         <canvas id="gameCanvas" width="600" height="400"></canvas>
     </div>
@@ -144,7 +148,8 @@
                                     let finalDmg = t.dmg * (currentTarget.vuln > 0 ? 1.2 : 1.0);
                                     currentTarget.hp -= finalDmg; addText(currentTarget.x+20, currentTarget.y, Math.floor(finalDmg), "#81ecec", 14);
                                     lastObj = {x: currentTarget.x+20, y: currentTarget.y+20};
-                                    currentTarget = enemies.find(e => !hitEnemies.includes(e) && Math.hypot(e.x-lastObj.x, e.y-lastObj.y) < 80);
+                                    // 雷擊連鎖範圍修正：80 像素 (2格)
+                                    currentTarget = enemies.find(e => !hitEnemies.includes(e) && Math.hypot(e.x+20-lastObj.x, e.y+20-lastObj.y) < 80);
                                 }
                             } else { bullets.push({x:t.x+20,y:t.y+20,target:target,dmg:t.dmg,t:t}); }
                             t.cd=t.cdM; 
@@ -207,7 +212,6 @@
             document.getElementById('money').innerText=money; document.getElementById('health').innerText=health; document.getElementById('wave').innerText=wave;
             document.getElementById('killReward').innerText=mG.toFixed(1)+"x";
 
-            // 核心敵人生成邏輯修正
             if(waveIn && spawnCnt > 0) {
                 if(++timer > 60) {
                     let isBoss = (totalInWave - spawnCnt + 1) === totalInWave && wave % 5 === 0;
