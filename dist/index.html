@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=640, user-scalable=no">
-    <title>元素戰爭：進化 (1.3/1.5 平衡修正版)</title>
+    <title>元素戰爭：進化 (AI 與視覺強化版)</title>
     <style>
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
         body { display: flex; flex-direction: column; align-items: center; background: #2c3e50; color: white; font-family: sans-serif; margin: 0; padding-top: 15px; touch-action: none; overflow: hidden; }
@@ -75,14 +75,8 @@
             cvs.onmousedown = () => {
                 let tx=Math.floor(mouse.x/40), ty=Math.floor(mouse.y/40);
                 let t = towers.find(i=>Math.floor(i.x/40)===tx && Math.floor(i.y/40)===ty);
-                if(t) { 
-                    selT=t; curT=null; 
-                    document.querySelectorAll('.shop-btn').forEach(b=>b.classList.remove('selected')); 
-                    document.getElementById('upgradeMenu').style.display='flex'; updateUI(); 
-                } else {
-                    if(curT) mouse.down=true; 
-                    deselect(); // 點擊空地，清除選中狀態
-                }
+                if(t) { selT=t; curT=null; document.querySelectorAll('.shop-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('upgradeMenu').style.display='flex'; updateUI(); }
+                else { if(curT) mouse.down=true; deselect(); }
             };
             cvs.onmouseup = () => {
                 let tx=Math.floor(mouse.x/40), ty=Math.floor(mouse.y/40);
@@ -116,40 +110,66 @@
             for(let y=0;y<10;y++) for(let x=0;x<15;x++) { ctx.fillStyle=map[y][x]===1?'#d35400':'#27ae60'; ctx.fillRect(x*40,y*40,40,40); }
             if(!running) { requestAnimationFrame(loop); return; }
 
-            // 繪製範圍 (預覽或選中)
             if(curT && mouse.down) drawRange(Math.floor(mouse.x/40)*40+20, Math.floor(mouse.y/40)*40+20, props[curT][0]);
             if(selT) drawRange(selT.x+20, selT.y+20, selT.range);
 
-            // 塔邏輯
             towers.forEach(t => { 
                 ctx.fillStyle=t.color; ctx.fillRect(t.x+2,t.y+2,36,36);
                 ctx.fillStyle="white"; ctx.font="bold 12px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
                 ctx.fillText("Lv"+t.lv, t.x+20, t.y+20); 
                 if(t.fz>0) { t.fz--; ctx.fillStyle="rgba(0,255,255,0.4)"; ctx.fillRect(t.x+2,t.y+2,36,36); return; }
+                
                 if(--t.cd<=0) {
                     if(t.type==='summon') { spawns.push({x:14*40,y:7*40,ti:10,dmg:t.dmg,lv:t.lv}); t.cd=t.cdM; }
                     else if(t.type==='trap') { let r=road[Math.floor(Math.random()*road.length)]; traps.push({x:r.x,y:r.y,dmg:t.dmg,lv:t.lv,isM:false,l:0}); t.cd=t.cdM; }
-                    else { let es = enemies.filter(e=>Math.hypot(e.x+20-(t.x+20), e.y+20-(t.y+20))<t.range); if(es.length>0) { bullets.push({x:t.x+20,y:t.y+20,target:es[0],dmg:t.dmg,t:t}); t.cd=t.cdM; } }
+                    else {
+                        // 索敵邏輯：過濾範圍內的敵人
+                        let inRange = enemies.filter(e => Math.hypot(e.x+20-(t.x+20), e.y+20-(t.y+20)) < t.range);
+                        if(inRange.length > 0) {
+                            let target = null;
+                            if(t.type === 'ice') {
+                                // 寒冰塔優先攻擊「未被緩速」的領先敵人
+                                let unslowed = inRange.filter(e => e.sl.l <= 0 && e.frz <= 0);
+                                target = unslowed.length > 0 ? unslowed.sort((a,b) => b.ti - a.ti || a.dToEnd - b.dToEnd)[0] : inRange.sort((a,b) => b.ti - a.ti || a.dToEnd - b.dToEnd)[0];
+                            } else {
+                                // 其他塔優先攻擊「最前方」敵人 (路徑點 index 最大，且離當前目標點最近)
+                                target = inRange.sort((a,b) => b.ti - a.ti || a.dToEnd - b.dToEnd)[0];
+                            }
+                            if(target) { bullets.push({x:t.x+20,y:t.y+20,target:target,dmg:t.dmg,t:t}); t.cd=t.cdM; }
+                        }
+                    }
                 }
             });
 
-            // 敵人邏輯
             enemies = enemies.filter(e => {
                 if(e.hp < e.max*0.3 && e.boss && !e.en) { e.en=true; e.sp*=2; e.pwr=120; addText(e.x, e.y-20, "BERSERK!!", "#ff3f34", 22); }
                 if(e.pwr>0) { e.pwr--; ctx.strokeStyle="#ff3f34"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(e.x+20,e.y+20,22,0,Math.PI*2); ctx.stroke(); if(e.pwr === 0) e.sp /= 2; }
+                
                 if(e.st>0 && e.pwr<=0) { e.st--; } else {
-                    let s = e.sp; if(e.pwr<=0 && e.sl.l>0) s *= e.sl.v; 
-                    let t=path[e.ti], dx=t.x*40-e.x, dy=t.y*40-e.y, d=Math.sqrt(dx*dx+dy*dy);
+                    let s = e.sp; 
+                    if(e.pwr<=0 && e.sl.l>0) s *= e.sl.v; 
+                    if(e.frz > 0) { s = 0; e.frz--; }
+                    let tar=path[e.ti], dx=tar.x*40-e.x, dy=tar.y*40-e.y, d=Math.sqrt(dx*dx+dy*dy);
+                    e.dToEnd = d; // 紀錄與目前目標點的距離用於索敵排序
                     if(d<2) { e.ti++; if(e.ti>=path.length) { health-=e.boss?10:1; return false; } } else { e.x+=dx/d*s; e.y+=dy/d*s; }
                 }
-                ctx.fillStyle=e.boss?"#8e44ad":e.isTank?"#7f8c8d":e.isScout?"#2ecc71":"#c0392b";
+
+                // 顏色狀態回饋
+                let baseColor = e.boss?"#8e44ad":e.isTank?"#7f8c8d":e.isScout?"#2ecc71":"#c0392b";
+                if(e.frz > 0) ctx.fillStyle = "#1e3799"; // 冰凍深藍
+                else if(e.sl.l > 0) ctx.fillStyle = "#48dbfb"; // 緩速淺藍
+                else ctx.fillStyle = baseColor;
+
                 ctx.beginPath(); ctx.arc(e.x+20,e.y+20,e.boss?18:e.isTank?14:10,0,Math.PI*2); ctx.fill();
+                
+                // 冰凍視覺光圈
+                if(e.frz > 0) { ctx.fillStyle="rgba(135,206,250,0.4)"; ctx.beginPath(); ctx.arc(e.x+20,e.y+20,15,0,Math.PI*2); ctx.fill(); }
+
                 ctx.fillStyle="#000"; ctx.fillRect(e.x, e.y-10, 40, 4); ctx.fillStyle="#2ecc71"; ctx.fillRect(e.x, e.y-10, 40*(e.hp/e.max), 4);
                 if(e.hp<=0) { money += Math.floor((e.boss?125:e.isTank||e.isScout?50:25) * Math.pow(1.2, wave-1) * mG); return false; }
                 return true;
             });
 
-            // 子彈與陷阱邏輯 (完整補全)
             traps = traps.filter(p => { 
                 if(p.isM) { p.l--; ctx.fillStyle="rgba(142,68,173,0.3)"; ctx.beginPath(); ctx.arc(p.x+20,p.y+20,45,0,Math.PI*2); ctx.fill(); enemies.forEach(e => { if(Math.hypot(e.x-p.x, e.y-p.y)<45 && e.pwr<=0) e.sl={v:0.4,l:2,m:true}; }); return p.l>0; } 
                 else { ctx.fillStyle="#2c3e50"; ctx.fillRect(p.x+12,p.y+12,16,16); let e = enemies.find(i=>Math.hypot(i.x-p.x, i.y-p.y)<30); if(e) { e.hp-=p.dmg; if(e.pwr<=0) e.st=e.boss?30:60; if(p.lv>=7){ p.isM=true; p.l=180; } return p.lv>=7; } return true; } 
@@ -161,7 +181,10 @@
                     let dmg = b.dmg, c="#fff"; 
                     if(b.t.type==='gun' && b.t.lv>=3 && Math.random()<(0.2+(b.t.lv-3)*0.04)) { dmg*=2.5; c="#ff3f34"; }
                     if(b.t.type==='bomb' && b.t.lv>=3 && Math.random()<(0.2+(b.t.lv-3)*0.05)) { dmg*=5; c="#f1c40f"; }
-                    if(b.t.type==='ice' && b.target.pwr<=0) b.target.sl={v:0.5,l:40,m:false};
+                    if(b.t.type==='ice' && b.target.pwr<=0) {
+                        b.target.sl={v:0.5,l:40,m:false};
+                        if(b.t.lv >= 5 && Math.random() < 0.15) { b.target.frz = 60; addText(b.target.x+20,b.target.y-10,"FROZEN!","#87CEFA",20); }
+                    }
                     b.target.hp-=dmg; addText(b.target.x+20,b.target.y,Math.floor(dmg),c); return false; 
                 } 
                 b.x+=dx/d*12; b.y+=dy/d*12; ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(b.x,b.y,3,0,Math.PI*2); ctx.fill(); return b.target.hp>0; 
@@ -176,17 +199,15 @@
 
             texts = texts.filter(t => { t.y-=1; t.l--; ctx.fillStyle=t.c; ctx.font="bold "+t.s+"px Arial"; ctx.fillText(t.t,t.x,t.y); return t.l>0; });
 
-            // UI 刷新
             document.getElementById('money').innerText=money; document.getElementById('health').innerText=health; document.getElementById('wave').innerText=wave;
             document.getElementById('killReward').innerText="$"+Math.floor(25 * Math.pow(1.2, wave-1) * mG);
 
-            // 刷怪邏輯
             if(waveIn && spawnCnt > 0) {
                 if(++timer > 60) {
                     let b = (totalInWave - spawnCnt + 1) === totalInWave && wave % 5 === 0;
                     let isT = !b && Math.random() < 0.2, isS = !b && !isT && Math.random() < 0.2;
                     let baseHp = 100 * Math.pow(hpG, wave-1);
-                    enemies.push({x:0,y:40,ti:1,hp:baseHp*(b?15:isT?3:isS?0.5:1),max:baseHp*(b?15:isT?3:isS?0.5:1),sp:b?1:isT?0.7:isS?2.4:1.4,boss:b,isTank:isT,isScout:isS,sl:{v:1,l:0,m:false},st:0,en:false,pwr:0});
+                    enemies.push({x:0,y:40,ti:1,hp:baseHp*(b?15:isT?3:isS?0.5:1),max:baseHp*(b?15:isT?3:isS?0.5:1),sp:b?1:isT?0.7:isS?2.4:1.4,boss:b,isTank:isT,isScout:isS,sl:{v:1,l:0,m:false},st:0,frz:0,en:false,pwr:0});
                     spawnCnt--; timer=0;
                 }
             } else if(enemies.length === 0 && waveIn) { waveIn = false; setTimeout(() => { wave++; startWave(); }, 2000); }
