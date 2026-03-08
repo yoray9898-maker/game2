@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=640, user-scalable=no">
-    <title>元素戰爭：進化 (AI 與視覺強化版)</title>
+    <title>元素戰爭：最終整合版</title>
     <style>
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
         body { display: flex; flex-direction: column; align-items: center; background: #2c3e50; color: white; font-family: sans-serif; margin: 0; padding-top: 15px; touch-action: none; overflow: hidden; }
@@ -17,8 +17,8 @@
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 45, 55, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
         .btn { width: 300px; padding: 12px; margin: 8px 8px 4px 8px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 rgba(0,0,0,0.3); transition: 0.2s; }
         .diff-hint { font-size: 0.85em; color: #bdc3c7; margin-bottom: 12px; }
-        .controls { margin-top: 10px; display: grid; grid-template-columns: repeat(5, 1fr); width: 620px; background: #34495e; padding: 8px; border-radius: 4px; gap: 5px; }
-        .shop-btn { padding: 10px 0; cursor: pointer; border: 2px solid transparent; border-radius: 4px; color: white; font-weight: bold; font-size: 0.75em; text-align: center; background: #455a64; }
+        .controls { margin-top: 10px; display: grid; grid-template-columns: repeat(6, 1fr); width: 620px; background: #34495e; padding: 8px; border-radius: 4px; gap: 5px; }
+        .shop-btn { padding: 10px 0; cursor: pointer; border: 2px solid transparent; border-radius: 4px; color: white; font-weight: bold; font-size: 0.7em; text-align: center; background: #455a64; }
         .shop-btn.selected { border: 2px solid #f1c40f; transform: translateY(-3px); }
         #upgradeMenu { background: #8e44ad; padding: 10px; border-radius: 30px; display: none; gap: 10px; align-items: center; border: 2px solid #f1c40f; margin-top: 10px; width: 620px; justify-content: center; }
     </style>
@@ -33,7 +33,7 @@
 
     <div id="game-container">
         <div id="start-screen" class="overlay">
-            <h1 style="color:#f1c40f">元素戰爭：進化</h1>
+            <h1 style="color:#f1c40f">元素戰爭：完全版</h1>
             <button class="btn" style="background:#2ecc71" onclick="startGame(1, 1.0)">簡單模式</button>
             <div class="diff-hint">敵人血量 ×1.0 | 基礎金幣 ×1.0</div>
             <button class="btn" style="background:#3498db" onclick="startGame(1.3, 1.2)">一般難度</button>
@@ -52,11 +52,12 @@
     </div>
 
     <div class="controls" id="shop">
-        <button class="shop-btn" id="b-gun" style="background:#2980b9" onclick="selectType('gun')">機槍 $50</button>
-        <button class="shop-btn" id="b-ice" style="background:#3498db" onclick="selectType('ice')">寒冰 $80</button>
-        <button class="shop-btn" id="b-bomb" style="background:#d35400" onclick="selectType('bomb')">砲擊 $120</button>
-        <button class="shop-btn" id="b-summon" style="background:#f1c40f; color:#2c3e50" onclick="selectType('summon')">召喚 $140</button>
-        <button class="shop-btn" id="b-trap" style="background:#8e44ad" onclick="selectType('trap')">陷阱 $140</button>
+        <button class="shop-btn" id="b-gun" onclick="selectType('gun')">機槍 $50</button>
+        <button class="shop-btn" id="b-ice" onclick="selectType('ice')">寒冰 $80</button>
+        <button class="shop-btn" id="b-bomb" onclick="selectType('bomb')">砲擊 $120</button>
+        <button class="shop-btn" id="b-tesla" onclick="selectType('tesla')">雷擊 $150</button>
+        <button class="shop-btn" id="b-summon" onclick="selectType('summon')">召喚 $140</button>
+        <button class="shop-btn" id="b-trap" onclick="selectType('trap')">陷阱 $140</button>
     </div>
 
     <script>
@@ -66,8 +67,10 @@
 
         const map = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,1,1,1,1,1,1,1,0],[0,0,0,0,1,0,0,1,0,0,0,0,0,1,0],[0,0,1,1,1,0,0,1,0,0,0,0,0,1,0],[0,0,1,0,0,0,0,1,0,0,1,1,1,1,0],[0,0,1,1,1,1,1,1,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]];
         const path = [{x:0,y:1},{x:4,y:1},{x:4,y:4},{x:2,y:4},{x:2,y:6},{x:7,y:6},{x:7,y:2},{x:13,y:2},{x:13,y:5},{x:10,y:5},{x:10,y:7},{x:14,y:7}];
-        const props = { gun:[140,25,18,'#2980b9',50], ice:[110,12,35,'#3498db',80], bomb:[170,60,65,'#d35400',120], summon:[0,150,360,'#f1c40f',140], trap:[0,25,300,'#8e44ad',140] };
-        const road = []; for(let y=0;y<10;y++) for(let x=0;x<15;x++) if(map[y][x]===1) road.push({x:x*40,y:y*40});
+        const props = { 
+            gun:[140,25,18,'#2980b9',50], ice:[110,12,35,'#3498db',80], bomb:[170,60,65,'#d35400',120], 
+            tesla:[130,15,30,'#1abc9c',150], summon:[0,150,360,'#f1c40f',140], trap:[0,25,300,'#8e44ad',140] 
+        };
 
         window.onload = () => {
             cvs = document.getElementById('gameCanvas'); ctx = cvs.getContext('2d');
@@ -93,7 +96,7 @@
         function startWave() { waveIn=true; spawnCnt = 5 + wave; totalInWave = spawnCnt; timer=0; }
         function deselect() { selT=null; document.getElementById('upgradeMenu').style.display='none'; }
         function selectType(t) { curT=t; document.querySelectorAll('.shop-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('b-'+t).classList.add('selected'); deselect(); }
-        function addText(x,y,t,c,s=16) { texts.push({x,y,t,c,s,l:40}); }
+        function addText(x,y,t,c,s=16) { texts.push({x:x+Math.random()*20-10,y,t,c,s,l:40}); } // 加入隨機偏移
         function upgradeTower() { let cost=Math.floor(props[selT.type][4]*Math.pow(1.6,selT.lv)); if(money>=cost) { money-=cost; selT.lv++; selT.dmg*=1.65; selT.range=Math.min(280,selT.range+10); updateUI(); } }
         function sellTower() { towers=towers.filter(t=>t!==selT); map[Math.floor(selT.y/40)][Math.floor(selT.x/40)]=0; money+=30; deselect(); }
         function updateUI() { if(!selT) return; let cost=Math.floor(props[selT.type][4]*Math.pow(1.6,selT.lv)); document.getElementById('upgradeCost').innerText=cost; document.getElementById('towerInfo').innerText="等級 "+selT.lv; }
@@ -101,8 +104,8 @@
         function drawRange(x, y, r) {
             if (r <= 0) return;
             ctx.save(); ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.8)"; ctx.lineWidth = 2; ctx.stroke();
-            ctx.fillStyle = "rgba(255, 255, 255, 0.1)"; ctx.fill(); ctx.restore();
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.6)"; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = "rgba(255, 255, 255, 0.05)"; ctx.fill(); ctx.restore();
         }
 
         function loop() {
@@ -110,84 +113,85 @@
             for(let y=0;y<10;y++) for(let x=0;x<15;x++) { ctx.fillStyle=map[y][x]===1?'#d35400':'#27ae60'; ctx.fillRect(x*40,y*40,40,40); }
             if(!running) { requestAnimationFrame(loop); return; }
 
+            // 繪製範圍顯示 (包含購買時與選中時)
             if(curT && mouse.down) drawRange(Math.floor(mouse.x/40)*40+20, Math.floor(mouse.y/40)*40+20, props[curT][0]);
             if(selT) drawRange(selT.x+20, selT.y+20, selT.range);
 
             towers.forEach(t => { 
                 ctx.fillStyle=t.color; ctx.fillRect(t.x+2,t.y+2,36,36);
-                ctx.fillStyle="white"; ctx.font="bold 12px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
-                ctx.fillText("Lv"+t.lv, t.x+20, t.y+20); 
+                ctx.fillStyle="white"; ctx.font="bold 12px Arial"; ctx.textAlign="center"; ctx.fillText("Lv"+t.lv, t.x+20, t.y+20); 
                 if(t.fz>0) { t.fz--; ctx.fillStyle="rgba(0,255,255,0.4)"; ctx.fillRect(t.x+2,t.y+2,36,36); return; }
                 
                 if(--t.cd<=0) {
                     if(t.type==='summon') { spawns.push({x:14*40,y:7*40,ti:10,dmg:t.dmg,lv:t.lv}); t.cd=t.cdM; }
-                    else if(t.type==='trap') { let r=road[Math.floor(Math.random()*road.length)]; traps.push({x:r.x,y:r.y,dmg:t.dmg,lv:t.lv,isM:false,l:0}); t.cd=t.cdM; }
+                    else if(t.type==='trap') { 
+                        let r = road[Math.floor(Math.random()*road.length)];
+                        traps.push({x:r.x,y:r.y,dmg:t.dmg,lv:t.lv,isM:false,l:0}); t.cd=t.cdM; 
+                    }
                     else {
-                        // 索敵邏輯：過濾範圍內的敵人
                         let inRange = enemies.filter(e => Math.hypot(e.x+20-(t.x+20), e.y+20-(t.y+20)) < t.range);
                         if(inRange.length > 0) {
-                            let target = null;
-                            if(t.type === 'ice') {
-                                // 寒冰塔優先攻擊「未被緩速」的領先敵人
-                                let unslowed = inRange.filter(e => e.sl.l <= 0 && e.frz <= 0);
-                                target = unslowed.length > 0 ? unslowed.sort((a,b) => b.ti - a.ti || a.dToEnd - b.dToEnd)[0] : inRange.sort((a,b) => b.ti - a.ti || a.dToEnd - b.dToEnd)[0];
-                            } else {
-                                // 其他塔優先攻擊「最前方」敵人 (路徑點 index 最大，且離當前目標點最近)
-                                target = inRange.sort((a,b) => b.ti - a.ti || a.dToEnd - b.dToEnd)[0];
-                            }
-                            if(target) { bullets.push({x:t.x+20,y:t.y+20,target:target,dmg:t.dmg,t:t}); t.cd=t.cdM; }
+                            let target = inRange.sort((a,b) => b.ti - a.ti || a.dToEnd - b.dToEnd)[0];
+                            if(t.type === 'tesla') {
+                                let chainCount = t.lv >= 3 ? Math.min(8, 2 + Math.floor((t.lv-3)/2)) : 1;
+                                let lastObj = {x: t.x+20, y: t.y+20}, hitEnemies = [], currentTarget = target;
+                                for(let i=0; i<chainCount; i++) {
+                                    if(!currentTarget) break; hitEnemies.push(currentTarget);
+                                    ctx.beginPath(); ctx.moveTo(lastObj.x, lastObj.y); ctx.lineTo(currentTarget.x+20, currentTarget.y+20);
+                                    ctx.strokeStyle = "#81ecec"; ctx.lineWidth = 3; ctx.stroke();
+                                    if(t.lv >= 5) currentTarget.vuln = 120;
+                                    let finalDmg = t.dmg * (currentTarget.vuln > 0 ? 1.2 : 1.0);
+                                    currentTarget.hp -= finalDmg; addText(currentTarget.x+20, currentTarget.y, Math.floor(finalDmg), "#81ecec", 14);
+                                    lastObj = {x: currentTarget.x+20, y: currentTarget.y+20};
+                                    currentTarget = enemies.find(e => !hitEnemies.includes(e) && Math.hypot(e.x-lastObj.x, e.y-lastObj.y) < 80);
+                                }
+                            } else { bullets.push({x:t.x+20,y:t.y+20,target:target,dmg:t.dmg,t:t}); }
+                            t.cd=t.cdM; 
                         }
                     }
                 }
             });
 
             enemies = enemies.filter(e => {
-                if(e.hp < e.max*0.3 && e.boss && !e.en) { e.en=true; e.sp*=2; e.pwr=120; addText(e.x, e.y-20, "BERSERK!!", "#ff3f34", 22); }
+                if(e.vuln > 0) e.vuln--;
+                if(e.hp < e.max*0.3 && e.boss && !e.en) { 
+                    e.en=true; e.sp*=2; e.pwr=120; addText(e.x, e.y-20, "BERSERK!!", "#ff3f34", 22); 
+                    let tToFreeze = towers[Math.floor(Math.random()*towers.length)];
+                    if(tToFreeze) tToFreeze.fz = 180;
+                }
                 if(e.pwr>0) { e.pwr--; ctx.strokeStyle="#ff3f34"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(e.x+20,e.y+20,22,0,Math.PI*2); ctx.stroke(); if(e.pwr === 0) e.sp /= 2; }
-                
                 if(e.st>0 && e.pwr<=0) { e.st--; } else {
-                    let s = e.sp; 
-                    if(e.pwr<=0 && e.sl.l>0) s *= e.sl.v; 
-                    if(e.frz > 0) { s = 0; e.frz--; }
+                    let s = e.sp; if(e.pwr<=0 && e.sl.l>0) s *= e.sl.v; if(e.frz > 0) s = 0, e.frz--;
                     let tar=path[e.ti], dx=tar.x*40-e.x, dy=tar.y*40-e.y, d=Math.sqrt(dx*dx+dy*dy);
-                    e.dToEnd = d; // 紀錄與目前目標點的距離用於索敵排序
                     if(d<2) { e.ti++; if(e.ti>=path.length) { health-=e.boss?10:1; return false; } } else { e.x+=dx/d*s; e.y+=dy/d*s; }
                 }
-
-                // 顏色狀態回饋
-                let baseColor = e.boss?"#8e44ad":e.isTank?"#7f8c8d":e.isScout?"#2ecc71":"#c0392b";
-                if(e.frz > 0) ctx.fillStyle = "#1e3799"; // 冰凍深藍
-                else if(e.sl.l > 0) ctx.fillStyle = "#48dbfb"; // 緩速淺藍
-                else ctx.fillStyle = baseColor;
-
+                if(e.vuln > 0) { ctx.strokeStyle = "#a29bfe"; ctx.lineWidth = 2; ctx.strokeRect(e.x+10, e.y-15, 20, 2); }
+                ctx.fillStyle = (e.frz>0)?"#1e3799":(e.sl.l>0)?"#48dbfb":(e.boss?"#8e44ad":e.isTank?"#7f8c8d":e.isScout?"#2ecc71":"#c0392b");
                 ctx.beginPath(); ctx.arc(e.x+20,e.y+20,e.boss?18:e.isTank?14:10,0,Math.PI*2); ctx.fill();
-                
-                // 冰凍視覺光圈
-                if(e.frz > 0) { ctx.fillStyle="rgba(135,206,250,0.4)"; ctx.beginPath(); ctx.arc(e.x+20,e.y+20,15,0,Math.PI*2); ctx.fill(); }
-
                 ctx.fillStyle="#000"; ctx.fillRect(e.x, e.y-10, 40, 4); ctx.fillStyle="#2ecc71"; ctx.fillRect(e.x, e.y-10, 40*(e.hp/e.max), 4);
-                if(e.hp<=0) { money += Math.floor((e.boss?125:e.isTank||e.isScout?50:25) * Math.pow(1.2, wave-1) * mG); return false; }
-                return true;
-            });
-
-            traps = traps.filter(p => { 
-                if(p.isM) { p.l--; ctx.fillStyle="rgba(142,68,173,0.3)"; ctx.beginPath(); ctx.arc(p.x+20,p.y+20,45,0,Math.PI*2); ctx.fill(); enemies.forEach(e => { if(Math.hypot(e.x-p.x, e.y-p.y)<45 && e.pwr<=0) e.sl={v:0.4,l:2,m:true}; }); return p.l>0; } 
-                else { ctx.fillStyle="#2c3e50"; ctx.fillRect(p.x+12,p.y+12,16,16); let e = enemies.find(i=>Math.hypot(i.x-p.x, i.y-p.y)<30); if(e) { e.hp-=p.dmg; if(e.pwr<=0) e.st=e.boss?30:60; if(p.lv>=7){ p.isM=true; p.l=180; } return p.lv>=7; } return true; } 
+                if(e.hp<=0) money += Math.floor((e.boss?125:25) * Math.pow(1.2, wave-1) * mG);
+                return e.hp>0;
             });
 
             bullets = bullets.filter(b => { 
                 let dx=b.target.x+20-b.x, dy=b.target.y+20-b.y, d=Math.sqrt(dx*dx+dy*dy); 
                 if(d<15) { 
-                    let dmg = b.dmg, c="#fff"; 
-                    if(b.t.type==='gun' && b.t.lv>=3 && Math.random()<(0.2+(b.t.lv-3)*0.04)) { dmg*=2.5; c="#ff3f34"; }
-                    if(b.t.type==='bomb' && b.t.lv>=3 && Math.random()<(0.2+(b.t.lv-3)*0.05)) { dmg*=5; c="#f1c40f"; }
-                    if(b.t.type==='ice' && b.target.pwr<=0) {
-                        b.target.sl={v:0.5,l:40,m:false};
-                        if(b.t.lv >= 5 && Math.random() < 0.15) { b.target.frz = 60; addText(b.target.x+20,b.target.y-10,"FROZEN!","#87CEFA",20); }
+                    let dmg = b.dmg * (b.target.vuln > 0 ? 1.2 : 1.0);
+                    let c="#fff", fontSize=16; 
+                    if(b.t.type==='gun' && b.t.lv>=3) {
+                        let critRate = Math.min(1.0, 0.2 + (b.t.lv-3) * 0.05);
+                        if(Math.random() < critRate) { dmg *= Math.min(3.5, 2.0 + (b.t.lv-3) * 0.1); c="#ff3f34"; fontSize=26; }
                     }
-                    b.target.hp-=dmg; addText(b.target.x+20,b.target.y,Math.floor(dmg),c); return false; 
+                    if(b.t.type==='bomb' && b.t.lv>=3 && Math.random()<(0.2+(b.t.lv-3)*0.05)) { dmg*=5; c="#f1c40f"; fontSize=32; }
+                    if(b.t.type==='ice' && b.target.pwr<=0) { b.target.sl={v:0.5,l:40,m:false}; if(b.t.lv >= 5 && Math.random() < 0.15) b.target.frz = 60; }
+                    b.target.hp-=dmg; addText(b.target.x+20,b.target.y,Math.floor(dmg),c,fontSize); return false; 
                 } 
                 b.x+=dx/d*12; b.y+=dy/d*12; ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(b.x,b.y,3,0,Math.PI*2); ctx.fill(); return b.target.hp>0; 
+            });
+
+            traps = traps.filter(p => { 
+                if(p.isM) { p.l--; ctx.fillStyle="rgba(142,68,173,0.3)"; ctx.beginPath(); ctx.arc(p.x+20,p.y+20,45,0,Math.PI*2); ctx.fill(); enemies.forEach(e => { if(Math.hypot(e.x-p.x, e.y-p.y)<45) e.sl={v:0.4,l:2,m:true}; }); return p.l>0; } 
+                else { ctx.fillStyle="#2c3e50"; ctx.fillRect(p.x+12,p.y+12,16,16); let e = enemies.find(i=>Math.hypot(i.x-p.x, i.y-p.y)<30); if(e) { e.hp-=p.dmg; if(e.pwr<=0) e.st=e.boss?30:60; if(p.lv>=7){ p.isM=true; p.l=180; } return p.lv>=7; } return true; } 
             });
 
             spawns = spawns.filter(s => { 
@@ -200,18 +204,12 @@
             texts = texts.filter(t => { t.y-=1; t.l--; ctx.fillStyle=t.c; ctx.font="bold "+t.s+"px Arial"; ctx.fillText(t.t,t.x,t.y); return t.l>0; });
 
             document.getElementById('money').innerText=money; document.getElementById('health').innerText=health; document.getElementById('wave').innerText=wave;
-            document.getElementById('killReward').innerText="$"+Math.floor(25 * Math.pow(1.2, wave-1) * mG);
-
-            if(waveIn && spawnCnt > 0) {
-                if(++timer > 60) {
-                    let b = (totalInWave - spawnCnt + 1) === totalInWave && wave % 5 === 0;
-                    let isT = !b && Math.random() < 0.2, isS = !b && !isT && Math.random() < 0.2;
-                    let baseHp = 100 * Math.pow(hpG, wave-1);
-                    enemies.push({x:0,y:40,ti:1,hp:baseHp*(b?15:isT?3:isS?0.5:1),max:baseHp*(b?15:isT?3:isS?0.5:1),sp:b?1:isT?0.7:isS?2.4:1.4,boss:b,isTank:isT,isScout:isS,sl:{v:1,l:0,m:false},st:0,frz:0,en:false,pwr:0});
-                    spawnCnt--; timer=0;
-                }
+            if(waveIn && spawnCnt > 0 && ++timer > 60) {
+                let b = (totalInWave-spawnCnt+1) === totalInWave && wave % 5 === 0;
+                let baseHp = 100 * Math.pow(hpG, wave-1);
+                enemies.push({x:0,y:40,ti:1,hp:baseHp*(b?15:1),max:baseHp*(b?15:1),sp:b?1:1.4,boss:b,sl:{v:1,l:0},st:0,frz:0,en:false,pwr:0,vuln:0});
+                spawnCnt--; timer=0;
             } else if(enemies.length === 0 && waveIn) { waveIn = false; setTimeout(() => { wave++; startWave(); }, 2000); }
-            
             if(health <= 0) { alert("生存波次: "+wave); location.reload(); }
             requestAnimationFrame(loop);
         }
