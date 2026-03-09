@@ -15,10 +15,10 @@
         #game-container { position: relative; width: 612px; height: 412px; }
         canvas { background-color: #ecf0f1; border: 6px solid #34495e; border-radius: 4px; display: block; cursor: crosshair; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 45, 55, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; text-align: center; }
+        .hidden { display: none !important; }
         .btn { width: 300px; padding: 12px; margin: 8px 8px 4px 8px; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 0 rgba(0,0,0,0.3); transition: 0.2s; }
         .diff-hint { font-size: 0.85em; color: #bdc3c7; margin-bottom: 12px; line-height: 1.4; }
         .controls { margin-top: 10px; display: grid; grid-template-columns: repeat(6, 1fr); width: 620px; background: #34495e; padding: 8px; border-radius: 4px; gap: 5px; }
-        
         .shop-btn { padding: 10px 0; cursor: pointer; border: 2px solid transparent; border-radius: 4px; color: white; font-weight: bold; font-size: 0.7em; text-align: center; box-shadow: 0 3px 0 rgba(0,0,0,0.3); transition: 0.2s; }
         #b-gun { background: #2980b9; }
         #b-ice { background: #3498db; }
@@ -27,7 +27,6 @@
         #b-summon { background: #f1c40f; color: #2c3e50; }
         #b-trap { background: #8e44ad; }
         .shop-btn.selected { border: 2px solid #f1c40f; transform: translateY(-3px); }
-        
         #upgradeMenu { background: #34495e; padding: 10px; border-radius: 30px; display: none; gap: 10px; align-items: center; border: 2px solid #f1c40f; margin-top: 10px; width: 620px; justify-content: center; }
     </style>
 </head>
@@ -48,12 +47,14 @@
             <div class="diff-hint">敵人血量 x1.3 / 金幣掉落 x1.2</div>
             <button class="btn" style="background:#e74c3c" onclick="startGame(1.5, 1.4)">困難難度</button>
             <div class="diff-hint">敵人血量 x1.5 / 金幣掉落 x1.4</div>
-       </div>
+        </div>
+
         <div id="game-over-screen" class="overlay hidden">
             <h1 style="color:#ff3f34; font-size: 2.5em;">戰地失守</h1>
-            <div id="finalStats" style="margin: 15px 0; font-size: 1.1em;"></div>
-            <button class="diff-btn" style="background:#27ae60;" onclick="location.reload()"><b>重新挑戰</b></button>
+            <div id="finalStats" style="margin: 15px 0; font-size: 1.2em; color: white; line-height: 1.6;"></div>
+            <button class="btn" style="background:#27ae60;" onclick="location.reload()"><b>重新挑戰</b></button>
         </div>
+
         <canvas id="gameCanvas" width="600" height="400"></canvas>
     </div>
 
@@ -106,7 +107,14 @@
             loop();
         };
 
-        function startGame(h, m) { hpG=h; mG=m; document.getElementById('start-screen').style.display='none'; running=true; startWave(); }
+        function startGame(h, m) { 
+            hpG=h; mG=m; 
+            health=20; money=300; wave=1; // 確保初始化數值
+            document.getElementById('start-screen').style.display='none'; 
+            running=true; 
+            startWave(); 
+        }
+
         function startWave() { waveIn=true; spawnCnt = 5 + wave; totalInWave = spawnCnt; timer=0; }
         function deselect() { selT=null; document.getElementById('upgradeMenu').style.display='none'; }
         function selectType(t) { curT=t; document.querySelectorAll('.shop-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('b-'+t).classList.add('selected'); deselect(); }
@@ -132,7 +140,21 @@
         function loop() {
             ctx.clearRect(0,0,600,400);
             for(let y=0;y<10;y++) for(let x=0;x<15;x++) { ctx.fillStyle=map[y][x]===1?'#d35400':'#27ae60'; ctx.fillRect(x*40,y*40,40,40); }
+            
+            // 重要：如果還沒開始，只畫地圖不執行邏輯
             if(!running) { requestAnimationFrame(loop); return; }
+
+            // 遊戲結束判定
+            if(health <= 0) {
+                running = false;
+                document.getElementById('game-over-screen').classList.remove('hidden');
+                document.getElementById('finalStats').innerHTML = `
+                    <p>挑戰失敗！</p>
+                    <p>最終波次：<span style="color:#f1c40f; font-size:1.5em;">${wave}</span></p>
+                    <p>難度加成：${mG.toFixed(1)}x</p>
+                `;
+                return; 
+            }
 
             if(curT && mouse.down) drawRange(Math.floor(mouse.x/40)*40+20, Math.floor(mouse.y/40)*40+20, props[curT][0]);
             if(selT) drawRange(selT.x+20, selT.y+20, selT.range);
@@ -194,7 +216,10 @@
                 ctx.fillStyle = (e.frz>0)?"#1e3799":(e.sl.l>0)?"#48dbfb":(e.boss?"#8e44ad":e.isTank?"#7f8c8d":e.isScout?"#2ecc71":"#c0392b");
                 ctx.beginPath(); ctx.arc(e.x+20,e.y+20,e.boss?18:e.isTank?14:10,0,Math.PI*2); ctx.fill();
                 ctx.fillStyle="#000"; ctx.fillRect(e.x, e.y-10, 40, 4); ctx.fillStyle="#2ecc71"; ctx.fillRect(e.x, e.y-10, 40*(e.hp/e.max), 4);
-                if(e.hp<=0) money += Math.floor((e.boss?125:25) * Math.pow(1.2, wave-1) * mG);
+                if(e.hp<=0) {
+                    if(e.boss) addText(e.x, e.y, "BOSS KILLED!", "#f1c40f", 24);
+                    money += Math.floor((e.boss?125:25) * Math.pow(1.2, wave-1) * mG);
+                }
                 return e.hp>0;
             });
 
@@ -242,9 +267,8 @@
                     spawnCnt--; timer=0;
                 }
             } else if(enemies.length === 0 && waveIn) { 
-                waveIn = false; setTimeout(() => { wave++; startWave(); }, 2000); 
+                waveIn = false; setTimeout(() => { if(running) { wave++; startWave(); } }, 2000); 
             }
-            if(health <= 0) { alert("GameOver! 波次: "+wave); location.reload(); }
             requestAnimationFrame(loop);
         }
     </script>
