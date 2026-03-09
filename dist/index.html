@@ -48,6 +48,11 @@
             <div class="diff-hint">敵人血量 x1.3 / 金幣掉落 x1.2</div>
             <button class="btn" style="background:#e74c3c" onclick="startGame(1.5, 1.4)">困難難度</button>
             <div class="diff-hint">敵人血量 x1.5 / 金幣掉落 x1.4</div>
+       </div>
+        <div id="game-over-screen" class="overlay hidden">
+            <h1 style="color:#ff3f34; font-size: 2.5em;">戰地失守</h1>
+            <div id="finalStats" style="margin: 15px 0; font-size: 1.1em;"></div>
+            <button class="diff-btn" style="background:#27ae60;" onclick="location.reload()"><b>重新挑戰</b></button>
         </div>
         <canvas id="gameCanvas" width="600" height="400"></canvas>
     </div>
